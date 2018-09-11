@@ -8,15 +8,15 @@ class Grid;
 
 class WorldArea {
 public:
-    WorldArea(Grid *g, GridPoint topLeft, GridPoint bottomRight);
-    ~WorldArea();
+	WorldArea(Grid *g, GridPoint topLeft, GridPoint bottomRight);
+	~WorldArea();
 
-    void render(SDL_Renderer* r, Transform const& tr);
+	void render(SDL_Renderer* r, Transform const& tr);
 
 private:
-    Grid* grid_;
-    int gX_, gY_;
-    int gW_, gH_;
+	Grid* grid_;
+	int gX_, gY_;
+	int gW_, gH_;
 };
 
 #endif //__WORLD_AREA_H__
