@@ -17,8 +17,8 @@ bool GUIElement::handleEvent(GUIEvent const &e) {
 		return onTouchEnd(e.x, e.y);
 	case GUIEvent::TOUCH_DRAG:
 		return onTouchDrag(e.x, e.y, e.dx, e.dy);
-	case GUIEvent::TOUCH_CLICK:
-		return onTouchClick(e.x, e.y);
+	case GUIEvent::CLICK:
+		return onClick(e.x, e.y);
 	default:
 		throw std::runtime_error("Unhandled event type");
 	}

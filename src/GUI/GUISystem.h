@@ -25,6 +25,7 @@ private:
 	std::vector<std::unique_ptr<GUIElement>> elements_;
 	int activeTouchElementHandle_ = -1;
 	int elementBelowPointerHandle_ = -1;
+	int touchMoveDelta_ = 0;
 
 	bool translateEvent(SDL_Event const& e, GUIEvent &out);
 	int getElementAtPosition(int x, int y);

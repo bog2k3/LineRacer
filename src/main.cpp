@@ -2,6 +2,7 @@
 #include "Grid.h"
 #include "WorldArea.h"
 #include "GUI/GUISystem.h"
+#include "GUI/Button.h"
 
 #include <SDL2/SDL.h>
 
@@ -116,7 +117,11 @@ void handleSDLEvent(SDL_Event &ev) {
 
 void initialize() {
 	// initialize UI
-	//...
+	Button* btn = new Button(30, 30, 120, 30);
+	btn->setAction([](Button* b) {
+		std::cout << "Button clicked!\n";
+	});
+	guiSystem.addElement(std::unique_ptr<Button>(btn));
 }
 
 int WinMain() {

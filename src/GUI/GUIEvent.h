@@ -10,7 +10,7 @@ struct GUIEvent {
 		TOUCH_BEGIN,
 		TOUCH_END,
 		TOUCH_DRAG,
-		TOUCH_CLICK
+		CLICK
 	};
 	EventType type = INVALID;	// type of event
 	int x = 0;		// relative (to element's origin) x coordinate

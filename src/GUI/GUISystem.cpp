@@ -46,6 +46,7 @@ bool GUISystem::translateEvent(SDL_Event const& e, GUIEvent &out) {
 			out.type = GUIEvent::TOUCH_BEGIN;
 			out.x = e.button.x;
 			out.y = e.button.y;
+			return true;
 		}
 		break;
 	case SDL_MOUSEBUTTONUP:
@@ -53,6 +54,7 @@ bool GUISystem::translateEvent(SDL_Event const& e, GUIEvent &out) {
 			out.type = GUIEvent::TOUCH_END;
 			out.x = e.button.x;
 			out.y = e.button.y;
+			return true;
 		}
 		break;
 	case SDL_MOUSEMOTION:
@@ -61,6 +63,7 @@ bool GUISystem::translateEvent(SDL_Event const& e, GUIEvent &out) {
 		out.y = e.motion.y;
 		out.dx = e.motion.xrel;
 		out.dy = e.motion.yrel;
+		return true;
 	default:
 		break;
 	}
@@ -69,7 +72,10 @@ bool GUISystem::translateEvent(SDL_Event const& e, GUIEvent &out) {
 
 int GUISystem::getElementAtPosition(int x, int y) {
 	for (int i=0; i<elements_.size(); i++) {
-		if (elements_[i].get() && elements_[i]->area.containsPoint(x, y))
+		if (elements_[i].get()
+			&& elements_[i]->area_.containsPoint(x, y)
+			&& elements_[i]->containsPoint(x, y)
+		)
 			return i;
 	}
 	return -1;
@@ -86,6 +92,7 @@ bool GUISystem::handleEvent(SDL_Event const& sdl_ev) {
 		assert(activeTouchElementHandle_ == -1);
 		activeTouchElementHandle_ = getElementAtPosition(ev.x, ev.y);
 		ev.dx = ev.dy = 0;
+		touchMoveDelta_ = 0;
 		if (elementBelowPointerHandle_ != activeTouchElementHandle_) {
 			if (elementBelowPointerHandle_ >= 0) {
 				GUIEvent additional = ev;
@@ -100,19 +107,22 @@ bool GUISystem::handleEvent(SDL_Event const& sdl_ev) {
 			}
 		}
 		break;
-	case GUIEvent::TOUCH_END:
+	case GUIEvent::TOUCH_END: {
 		targetElement = activeTouchElementHandle_;
 		activeTouchElementHandle_ = -1;
 		ev.dx = ev.dy = 0;
-		break;
-	case GUIEvent::TOUCH_CLICK:
-		targetElement = activeTouchElementHandle_;
-		ev.dx = ev.dy = 0;
-		break;
+		auto elementBelow = getElementAtPosition(ev.x, ev.y);
+		if (touchMoveDelta_ < 5 && elementBelow == targetElement && elementBelow >= 0) {
+			GUIEvent additional;
+			additional.type = GUIEvent::CLICK;
+			additionalEvents.push_back({elementBelow, additional});
+		}
+	} break;
 	case GUIEvent::POINTER_MOVE: {
 		if (activeTouchElementHandle_ >= 0) {
 			ev.type = GUIEvent::TOUCH_DRAG;
 		}
+		touchMoveDelta_ += abs(ev.dx) + abs(ev.dy);
 		int currentEl = getElementAtPosition(ev.x, ev.y);
 		if (currentEl != elementBelowPointerHandle_) {
 			if (elementBelowPointerHandle_ >= 0) {
@@ -137,10 +147,14 @@ bool GUISystem::handleEvent(SDL_Event const& sdl_ev) {
 		targetElement = activeTouchElementHandle_;
 	for (auto &e : additionalEvents) {
 		assert(e.first >= 0 && e.first < elements_.size() && elements_[e.first].get());
+		e.second.x -= elements_[e.first]->area_.x;
+		e.second.y -= elements_[e.first]->area_.y;
 		elements_[e.first]->handleEvent(e.second);
 	}
 	if (targetElement >= 0) {
 		assert(targetElement < elements_.size() && elements_[targetElement].get());
+		ev.x -= elements_[targetElement]->area_.x;
+		ev.y -= elements_[targetElement]->area_.y;
 		return elements_[targetElement]->handleEvent(ev);
 	}
 	return false;
