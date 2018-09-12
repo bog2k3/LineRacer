@@ -1,8 +1,10 @@
 #include "transform.h"
 #include "Grid.h"
 #include "WorldArea.h"
+#include "Track.h"
 #include "GUI/GUISystem.h"
 #include "GUI/Button.h"
+#include "color.h"
 
 #include <SDL2/SDL.h>
 
@@ -11,12 +13,14 @@
 const int windowW = 1280;
 const int windowH = 720;
 const int squareSize = 20;
+float trackResolution = 2.f;
 
 bool SIGNAL_QUIT = false;
 
 Transform tr;
 Grid grid(squareSize, windowW, windowH);
 WorldArea warea(&grid, {1, 1}, {63, 35});
+Track track(&grid, &warea, trackResolution);
 
 GUISystem guiSystem;
 
@@ -27,16 +31,20 @@ void update(float dt) {
 }
 
 void render(SDL_Renderer *renderer) {
-	grid.render(renderer, tr);
-	warea.render(renderer, tr);
+	grid.render(renderer);
+	warea.render(renderer);
+	track.render(renderer);
 
 	// draw grid point closest to mouse:
-	ScreenPoint p = grid.gridToScreen(mousePoint, tr);
-	SDL_Rect rc {
-		p.x - 3, p.y - 3,
-		7, 7
-	};
-	SDL_RenderFillRect(renderer, &rc);
+	if (!track.isInDesignMode()) {
+		ScreenPoint p = grid.gridToScreen(mousePoint);
+		SDL_Rect rc {
+			p.x - 3, p.y - 3,
+			7, 7
+		};
+		Colors::GRID.set(renderer);
+		SDL_RenderFillRect(renderer, &rc);
+	}
 
 	// draw user interface
 	guiSystem.render(renderer);
@@ -61,7 +69,10 @@ void handleMouseEvent(SDL_Event &ev) {
 		if (ev.button.button == 3) {
 			isDragging = ev.button.state == SDL_PRESSED;
 		} else if (ev.button.button == 1) {
-
+			if (track.isInDesignMode()) {
+				WorldPoint wp = ScreenPoint{ev.motion.x, ev.motion.y}.toWorld(tr);
+				track.pointerTouch(ev.button.state == SDL_PRESSED, wp.x, wp.y);
+			}
 		}
 	break;
 	case SDL_MOUSEMOTION:
@@ -70,8 +81,12 @@ void handleMouseEvent(SDL_Event &ev) {
 			float dy = ev.motion.yrel / tr.scale;
 			tr.transX += dx;
 			tr.transY += dy;
+			grid.setTransform(tr);
+		} else if (track.isInDesignMode()) {
+			WorldPoint wp = ScreenPoint{ev.motion.x, ev.motion.y}.toWorld(tr);
+			track.pointerMoved(wp.x, wp.y);
 		}
-		mousePoint = grid.screenToGrid({ev.motion.x, ev.motion.y}, tr);
+		mousePoint = grid.screenToGrid({ev.motion.x, ev.motion.y});
 	break;
 	case SDL_MOUSEWHEEL: {
 		// zoom view:
@@ -85,6 +100,8 @@ void handleMouseEvent(SDL_Event &ev) {
 		float oldFitH = windowH / oldScale;
 		float newFitH = windowH / tr.scale;
 		tr.transY += (newFitH - oldFitH) / 2;
+
+		grid.setTransform(tr);
 	} break;
 	default:
 		break;
@@ -118,8 +135,14 @@ void handleSDLEvent(SDL_Event &ev) {
 void initialize() {
 	// initialize UI
 	Button* btn = new Button(30, 30, 120, 30);
-	btn->setAction([](Button* b) {
-		std::cout << "Button clicked!\n";
+	btn->setText("Draw Track");
+	btn->setAction([&](Button* b) {
+		if (track.isInDesignMode()) {
+			track.enableDesignMode(false);
+		} else {
+			track.reset();
+			track.enableDesignMode(true);
+		}
 	});
 	guiSystem.addElement(std::unique_ptr<Button>(btn));
 }
@@ -147,7 +170,7 @@ int WinMain() {
 	SDL_UpdateWindowSurface( window );
 
 	auto renderer = SDL_CreateRenderer(window, -1, 0);
-	SDL_SetRenderDrawColor(renderer, 0xFF, 0xF0, 0xE6, 0xFF);
+	Colors::BACKGROUND.set(renderer);
 	SDL_RenderClear(renderer);
 
 	initialize();
@@ -159,7 +182,7 @@ int WinMain() {
 		}
 		update(0.f);
 
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0xF0, 0xE6, 0xFF);
+		Colors::BACKGROUND.set(renderer);
 		SDL_RenderClear(renderer);
 		render(renderer);
 		SDL_RenderPresent(renderer);

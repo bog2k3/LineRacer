@@ -1,5 +1,6 @@
 #include "Grid.h"
 #include "transform.h"
+#include "color.h"
 
 #include <SDL2/SDL_render.h>
 
@@ -9,20 +10,20 @@ Grid::Grid(int size, int winW, int winH) : size_(size), winW_(winW), winH_(winH)
 Grid::~Grid() {
 }
 
-void Grid::render(SDL_Renderer *r, Transform const& t) {
-	SDL_SetRenderDrawColor(r, 190, 210, 255, SDL_ALPHA_OPAQUE);
+void Grid::render(SDL_Renderer *r) {
+	Colors::GRID.set(r);
 
-	float squareSz = size_ * t.scale;
+	float squareSz = size_ * tr_.scale;
 	int nSqX = ceil(winW_ / squareSz);
 	int nSqY = ceil(winH_ / squareSz);
-	float offsX = fmodf(t.transX, size_);
+	float offsX = fmodf(tr_.transX, size_);
 	if (offsX < 0)
 		offsX += size_;
-	offsX *= t.scale;
-	float offsY = fmodf(t.transY, size_);
+	offsX *= tr_.scale;
+	float offsY = fmodf(tr_.transY, size_);
 	if (offsY < 0)
 		offsY += size_;
-	offsY *= t.scale;
+	offsY *= tr_.scale;
 
 	// draw horizontal lines
 	for (int i=0; i<nSqY; i++) {
@@ -37,15 +38,23 @@ void Grid::render(SDL_Renderer *r, Transform const& t) {
 	}
 }
 
-ScreenPoint Grid::gridToScreen(GridPoint p, Transform const& t) {
-	int sX = (p.x * size_ + t.transX) * t.scale;
-	int sY = (p.y * size_ + t.transY) * t.scale;
+ScreenPoint Grid::gridToScreen(GridPoint p) const {
+	int sX = (p.x * size_ + tr_.transX) * tr_.scale;
+	int sY = (p.y * size_ + tr_.transY) * tr_.scale;
 	return {sX, sY};
 }
 
-GridPoint Grid::screenToGrid(ScreenPoint p, Transform const& t) {
-	float gX = (p.x / t.scale - t.transX) / size_;
-	float gY = (p.y / t.scale - t.transY) / size_;
+WorldPoint Grid::gridToWorld(GridPoint p) const {
+	return {p.x * size_, p.y * size_};
+}
+
+GridPoint Grid::screenToGrid(ScreenPoint p) const {
+	return worldToGrid(p.toWorld(tr_));
+}
+
+GridPoint Grid::worldToGrid(WorldPoint wp) const {
+	float gX = wp.x / size_;
+	float gY = wp.y / size_;
 	GridPoint ret {(int)gX, (int)gY, 0};
 	gX = gX - (int)gX;
 	if (abs(gX) > 0.5) {

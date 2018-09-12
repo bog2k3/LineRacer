@@ -7,4 +7,20 @@ struct Transform {
 	float transY = 0;	// virtual pixel offset
 };
 
+struct ScreenPoint;
+
+struct WorldPoint {
+	float x = 0;
+	float y = 0;
+
+	ScreenPoint toScreen(Transform const& tr);
+};
+
+struct ScreenPoint {
+	int x=0;
+	int y=0;
+
+	WorldPoint toWorld(Transform const& tr);
+};
+
 #endif //__TRANSFORM_H__

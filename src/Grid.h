@@ -1,8 +1,9 @@
 #ifndef __GRID_H__
 #define __GRID_H__
 
+#include "transform.h"
+
 struct SDL_Renderer;
-struct Transform;
 
 struct GridPoint {
 	int x=0;			// x coordinate on grid
@@ -14,24 +15,24 @@ struct GridPoint {
 	GridPoint(int x, int y, float dist) : x(x), y(y), distance(dist) {}
 };
 
-struct ScreenPoint {
-	int x=0;
-	int y=0;
-};
-
 class Grid {
 public:
 	Grid(int size, int winW, int winH);
 	~Grid();
 
-	void render(SDL_Renderer *r, Transform const& t);
+	void setTransform(Transform t) { tr_ = t; }
+	Transform const& getTransform() const { return tr_; }
+	void render(SDL_Renderer *r);
 
-	ScreenPoint gridToScreen(GridPoint p, Transform const& t);
-	GridPoint screenToGrid(ScreenPoint p, Transform const& t);
+	ScreenPoint gridToScreen(GridPoint p) const;
+	WorldPoint gridToWorld(GridPoint p) const;
+	GridPoint screenToGrid(ScreenPoint p) const;
+	GridPoint worldToGrid(WorldPoint p) const;
 
 private:
 	int size_;
 	int winW_, winH_;
+	Transform tr_;
 };
 
 #endif // __GRID_H__

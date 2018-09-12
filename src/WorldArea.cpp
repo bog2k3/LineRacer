@@ -1,5 +1,6 @@
 #include "WorldArea.h"
 #include "Grid.h"
+#include "color.h"
 
 #include <SDL2/SDL_render.h>
 
@@ -12,11 +13,11 @@ WorldArea::WorldArea(Grid *g, GridPoint topLeft, GridPoint bottomRight)
 WorldArea::~WorldArea() {
 }
 
-void WorldArea::render(SDL_Renderer* r, Transform const& tr) {
-	ScreenPoint topLeft = grid_->gridToScreen({gX_, gY_}, tr);
-	ScreenPoint bottomRight = grid_->gridToScreen({gX_+gW_, gY_+gH_}, tr);
+void WorldArea::render(SDL_Renderer* r) {
+	ScreenPoint topLeft = grid_->gridToScreen({gX_, gY_});
+	ScreenPoint bottomRight = grid_->gridToScreen({gX_+gW_, gY_+gH_});
 
-	SDL_SetRenderDrawColor(r, 190, 210, 255, SDL_ALPHA_OPAQUE);
+	Colors::GRID.set(r);
 	const int thickness = 1;
 
 	// left edge
@@ -43,4 +44,11 @@ void WorldArea::render(SDL_Renderer* r, Transform const& tr) {
 		(bottomRight.x - topLeft.x) + 2*thickness, 1 + 2*thickness
 	};
 	SDL_RenderFillRect(r, &rc);
+}
+
+bool WorldArea::containsPoint(WorldPoint const& wp) const {
+	WorldPoint topLeft = grid_->gridToWorld({gX_, gY_});
+	WorldPoint bottomRight = grid_->gridToWorld({gX_+gW_, gY_+gH_});
+	return wp.x > topLeft.x && wp.y > topLeft.y
+		&& wp.x < bottomRight.x && wp.y < bottomRight.y;
 }

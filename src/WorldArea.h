@@ -2,7 +2,7 @@
 #define __WORLD_AREA_H__
 
 struct GridPoint;
-struct Transform;
+struct WorldPoint;
 struct SDL_Renderer;
 class Grid;
 
@@ -11,7 +11,9 @@ public:
 	WorldArea(Grid *g, GridPoint topLeft, GridPoint bottomRight);
 	~WorldArea();
 
-	void render(SDL_Renderer* r, Transform const& tr);
+	void render(SDL_Renderer* r);
+
+	bool containsPoint(WorldPoint const& wp) const;
 
 private:
 	Grid* grid_;
