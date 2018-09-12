@@ -48,10 +48,17 @@ void Track::enableDesignMode(bool enable) {
 }
 
 void Track::pointerMoved(float x, float y) {
+	if (!designMode_)
+		return;
 	floatingVertex_.x = x;
 	floatingVertex_.y = y;
-	if (pointerPressed_) {
-		// ...
+	if (pointerPressed_
+		&& polyVertex_[currentPolyIdx_].size()
+		&& worldArea_->containsPoint(floatingVertex_)
+	) {
+		float minDist = grid_->size() / resolution_;
+		if (floatingVertex_.distanceTo(polyVertex_[currentPolyIdx_].back()) >= minDist)
+			polyVertex_[currentPolyIdx_].push_back(floatingVertex_);
 	}
 }
 
