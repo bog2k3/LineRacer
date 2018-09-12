@@ -1,6 +1,6 @@
 #include "ButtonRound.h"
 
-#include <SDL2/SDL_Render.h>
+#include <SDL2/SDL_render.h>
 
 ButtonRound::ButtonRound(int centerX, int centerY, int radius)
 	: Button(centerX-radius, centerY-radius, 2*radius, 2*radius) {

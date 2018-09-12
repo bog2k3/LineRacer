@@ -1,6 +1,6 @@
 #include "color.h"
 
-#include <SDL2/SDL_Render.h>
+#include <SDL2/SDL_render.h>
 
 void Color::set(SDL_Renderer* rend) const {
 	SDL_SetRenderDrawColor(rend, r, g, b, a);

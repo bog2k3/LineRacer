@@ -147,8 +147,11 @@ void initialize() {
 	guiSystem.addElement(std::unique_ptr<Button>(btn));
 }
 
+#ifdef __WIN32__
 int WinMain() {
-
+#else
+int main() {
+#endif
 	SDL_Window* window = nullptr;
 	SDL_Surface* screenSurf = nullptr;
 
