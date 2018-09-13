@@ -20,6 +20,14 @@
 std::pair<int, int> TrackPartition::worldToCell(WorldPoint const& wp) const {
 	int row = (wp.y / track_.grid_->cellSize() - track_.worldArea_->topLeft().y) / relativeCellSize_;
 	int col = (wp.x / track_.grid_->cellSize() - track_.worldArea_->topLeft().x) / relativeCellSize_;
+	if (row < 0)
+		row = 0;
+	if ((unsigned)row >= cells.size())
+		row = cells.size()-1;
+	if (col < 0)
+		col = 0;
+	if ((unsigned)col >= cells[0].size())
+		col = cells[0].size()-1;
 	return {row, col};
 }
 
@@ -33,10 +41,6 @@ void TrackPartition::addVertex(std::pair<int, int> index, WorldPoint const& v) {
 	auto coord = worldToCell(v);
 	int row = coord.first;
 	int col = coord.second;
-
-	assert(row >= 0 && (unsigned)row < cells.size());
-	assert(col >= 0 && (unsigned)col < cells[0].size());
-
 	cells[row][col].insert(index);
 }
 
@@ -70,21 +74,13 @@ void TrackPartition::addSegment(std::pair<int, std::pair<int, int>> seg, WorldPo
 }
 
 std::set<std::pair<int, int>> TrackPartition::getVerticesInArea(WorldPoint topLeft, WorldPoint bottomRight) const {
+	assert(bottomRight.x >= topLeft.x && bottomRight.y >= topLeft.y);
 	auto coord1 = worldToCell(topLeft);
 	int row1 = coord1.first;
 	int col1 = coord1.second;
 	auto coord2 = worldToCell(bottomRight);
-	int row2 = coord2.first;
-	int col2 = coord2.second;
-
-	assert(row2 >= row1 && col2 >= col1);
-
-	if (row1 < 0) row1 = 0;
-	if ((unsigned)row2 >= cells.size())
-		row2 = cells.size() - 1;
-	if (col1 < 0) col1 = 0;
-	if ((unsigned)col2 >= cells.size())
-		col2 = cells.size() -1 ;
+	int row2 = coord2.first + 1;
+	int col2 = coord2.second + 1;
 
 	std::set<std::pair<int, int>> ret;
 	for (int i=row1; i<=row2; i++)

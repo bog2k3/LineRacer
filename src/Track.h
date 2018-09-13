@@ -48,6 +48,8 @@ private:
 	bool checkCloseSnap();
 	bool validateVertex();
 	void pushVertex();
+	// returns true if a line from point p1 to p2 intersects a track segment
+	bool intersectLine(WorldPoint const& p1, WorldPoint const& p2, bool skipLastSegment) const;
 };
 
 #endif //__TRACK_H__

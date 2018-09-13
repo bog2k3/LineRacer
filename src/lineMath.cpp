@@ -32,9 +32,13 @@ int orientation(WorldPoint const& p, WorldPoint const& q, WorldPoint const& r) {
     return (val > 0)? +1: -1; // clock or counterclock wise
 }
 
-float clockwiseness(WorldPoint* points, unsigned n) {
-	// ...
-	return 0;
+int clockwiseness(const WorldPoint* points, unsigned n) {
+	if (n < 3)
+		return 0;
+	int ret = 0;
+	for (unsigned i=1; i<=n; i++)
+		ret += orientation(points[(i-1)%n], points[i%n], points[(i+1)%n]);
+	return ret;
 }
 
 bool segmentIntersect(WorldPoint const& p1a, WorldPoint const& p1b, WorldPoint const& p2a, WorldPoint const& p2b) {

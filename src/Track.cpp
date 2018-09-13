@@ -6,7 +6,7 @@
 #include "lineMath.h"
 
 #include <SDL2/SDL_render.h>
-#include <cmath>
+#include <cassert>
 
 static const int PARTITION_CELL_SPAN = 10;
 
@@ -84,27 +84,8 @@ bool Track::validateVertex() {
 	// check intersection:
 	if (polyVertex_[currentPolyIdx_].size()) {
 		auto prevVertex = polyVertex_[currentPolyIdx_].back();
-		WorldPoint topLeft {std::min(floatingVertex_.x, prevVertex.x), std::min(floatingVertex_.y, prevVertex.y)};
-		WorldPoint bottomRight {std::max(floatingVertex_.x, prevVertex.x), std::max(floatingVertex_.y, prevVertex.y)};
-		auto vertices = partition_.getVerticesInArea(topLeft, bottomRight);
-		for (auto &v : vertices) {
-			int polyIdx = v.first;
-			int vIdx = v.second;
-			if (polyIdx == currentPolyIdx_ && (unsigned)vIdx+1 == polyVertex_[currentPolyIdx_].size())
-				continue; // we're not checking against last segment because that one is connected
-			if (vIdx > 0) {
-				// check line before vertex
-				if (lineMath::segmentIntersect(polyVertex_[currentPolyIdx_].back(), floatingVertex_, polyVertex_[polyIdx][vIdx-1], polyVertex_[polyIdx][vIdx]))
-					return false;
-			}
-			if (polyIdx == currentPolyIdx_ && (unsigned)vIdx+2 == polyVertex_[currentPolyIdx_].size())
-				continue; // we're not checking against last segment because that one is connected
-			if ((unsigned)vIdx + 1 < polyVertex_[polyIdx].size()) {
-				// check line following vertex
-				if (lineMath::segmentIntersect(polyVertex_[currentPolyIdx_].back(), floatingVertex_, polyVertex_[polyIdx][vIdx], polyVertex_[polyIdx][vIdx+1]))
-					return false;
-			}
-		}
+		if (intersectLine(prevVertex, floatingVertex_, true))
+			return false;
 	}
 
 	// check second contour to be inside first:
@@ -161,11 +142,48 @@ void Track::pointerTouch(bool on, float x, float y) {
 	}
 }
 
-bool Track::intersectLine(GridPoint const& p1, GridPoint const& p2) const {
-	// ...
+bool Track::intersectLine(WorldPoint const& p1, WorldPoint const& p2, bool skipLastSegment) const {
+	WorldPoint topLeft {std::min(p1.x, p2.x), std::min(p1.y, p2.y)};
+	WorldPoint bottomRight {std::max(p1.x, p2.x), std::max(p1.y, p2.y)};
+	auto vertices = partition_.getVerticesInArea(topLeft, bottomRight);
+	for (auto &v : vertices) {
+		int polyIdx = v.first;
+		int vIdx = v.second;
+		if (skipLastSegment && polyIdx == currentPolyIdx_ && (unsigned)vIdx+1 == polyVertex_[currentPolyIdx_].size())
+			continue; // we're not checking against last segment because that one is connected
+		if (vIdx > 0) {
+			// check line before vertex
+			if (lineMath::segmentIntersect(p1, p2, polyVertex_[polyIdx][vIdx-1], polyVertex_[polyIdx][vIdx]))
+				return true;
+		}
+		if (skipLastSegment && polyIdx == currentPolyIdx_ && (unsigned)vIdx+2 == polyVertex_[currentPolyIdx_].size())
+			continue; // we're not checking against last segment because that one is connected
+		if ((unsigned)vIdx + 1 < polyVertex_[polyIdx].size()) {
+			// check line following vertex
+			if (lineMath::segmentIntersect(p1, p2, polyVertex_[polyIdx][vIdx], polyVertex_[polyIdx][vIdx+1]))
+				return true;
+		}
+	}
 	return false;
 }
 
+bool Track::intersectLine(GridPoint const& p1, GridPoint const& p2) const {
+	return intersectLine(grid_->gridToWorld(p1), grid_->gridToWorld(p2), false);
+}
+
 bool Track::pointInsidePolygon(WorldPoint const& p, int polyIndex) const {
-	return true;
+	assert(polyIndex >= 0 && polyIndex <= 1);
+	if (polyVertex_[polyIndex].size() < 3)
+		return false;
+	int clockwiseness = lineMath::clockwiseness(polyVertex_[polyIndex].data(), polyVertex_[polyIndex].size()-1);	//-1 because last vertex is a duplicate of the first
+	int sidedness = 0;
+	for (unsigned i=0; i<polyVertex_[polyIndex].size()-1; i++) // -1 because we look one vertex ahead
+		sidedness += lineMath::orientation(polyVertex_[polyIndex][i], polyVertex_[polyIndex][i+1], p);
+	// if the polygon's clockwiseness has a different sign than the point's sidedness, then the point is outside
+	if (clockwiseness * sidedness < 0)
+		return false;
+	// more than half of the edges must have the same orientation towards the test-point as the polygon's clockwiseness
+	return abs(sidedness) > (polyVertex_[polyIndex].size()-1) / 2.f;
+
+	THIS IS FLAWED !!!
 }
