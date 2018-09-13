@@ -24,7 +24,7 @@ public:
 	Transform const& getTransform() const { return tr_; }
 	void render(SDL_Renderer *r);
 
-	int size() { return size_; }
+	int cellSize() { return size_; }
 	ScreenPoint gridToScreen(GridPoint p) const;
 	WorldPoint gridToWorld(GridPoint p) const;
 	GridPoint screenToGrid(ScreenPoint p) const;

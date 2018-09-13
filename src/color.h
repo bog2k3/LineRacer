@@ -18,6 +18,7 @@ namespace Colors {
 	static const Color GRID {190, 210, 255};
 	static const Color TRACK {10, 35, 90};
 	static const Color TRACK_TRANSP {10, 35, 90, 64};
+	static const Color TRACK_SNAP {10, 145, 225};
 	static const Color BUTTON_BORDER {5, 100, 110, 128};
 	static const Color BUTTON_FILL {80, 215, 235};
 	static const Color BUTTON_FILL_HOVER {135, 225, 240};

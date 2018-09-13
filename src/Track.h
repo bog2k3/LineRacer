@@ -2,6 +2,7 @@
 #define __TRACK_H__
 
 #include "transform.h"
+#include "TrackPartition.h"
 
 #include <vector>
 
@@ -26,10 +27,17 @@ public:
 
 	// returns true if a line from grid point p1 to p2 intersects a track segment
 	bool intersectLine(GridPoint const& p1, GridPoint const& p2) const;
+	// returns true if a line segment l1a->l1b intersects another line segment l2a->l2b
+	static bool intersectLine(WorldPoint const& l1a, WorldPoint const& l1b, WorldPoint const& l2a, WorldPoint const& l2b);
+	// returns true if the point is inside the closed polygon
+	bool pointInsidePolygon(WorldPoint const& p, int polyIndex) const;
 
 private:
+	friend class TrackPartition;
+
 	Grid* grid_;
 	WorldArea* worldArea_;
+	TrackPartition partition_;
 	float resolution_;
 	bool designMode_ = false;
 	bool pointerPressed_ = false;
@@ -38,6 +46,10 @@ private:
 
 	// track consists of two closed polygons, one inner and one outer
 	std::vector<WorldPoint> polyVertex_[2];
+
+	bool checkCloseSnap();
+	bool validateVertex();
+	void pushVertex();
 };
 
 #endif //__TRACK_H__

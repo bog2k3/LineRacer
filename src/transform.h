@@ -22,6 +22,10 @@ struct WorldPoint {
 		float ydif = y - p.y;
 		return sqrt(xdif*xdif + ydif*ydif);
 	}
+
+	bool operator==(WorldPoint const& p) const {
+		return x==p.x && y==p.y;
+	}
 };
 
 struct ScreenPoint {

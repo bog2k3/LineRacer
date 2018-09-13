@@ -6,49 +6,48 @@
 
 WorldArea::WorldArea(Grid *g, GridPoint topLeft, GridPoint bottomRight)
 	: grid_(g)
-	, gX_(topLeft.x), gY_(topLeft.y)
-	, gW_(bottomRight.x - topLeft.x), gH_(bottomRight.y - topLeft.y) {
+	, topLeft_(topLeft), bottomRight_(bottomRight) {
 }
 
 WorldArea::~WorldArea() {
 }
 
 void WorldArea::render(SDL_Renderer* r) {
-	ScreenPoint topLeft = grid_->gridToScreen({gX_, gY_});
-	ScreenPoint bottomRight = grid_->gridToScreen({gX_+gW_, gY_+gH_});
+	ScreenPoint sTopLeft = grid_->gridToScreen(topLeft_);
+	ScreenPoint sBottomRight = grid_->gridToScreen(bottomRight_);
 
 	Colors::GRID.set(r);
 	const int thickness = 1;
 
 	// left edge
 	SDL_Rect rc {
-		topLeft.x - thickness, topLeft.y - thickness,
-		1 + 2*thickness, (bottomRight.y - topLeft.y) + 2*thickness
+		sTopLeft.x - thickness, sTopLeft.y - thickness,
+		1 + 2*thickness, (sBottomRight.y - sTopLeft.y) + 2*thickness
 	};
 	SDL_RenderFillRect(r, &rc);
 	// top edge
 	rc = {
-		topLeft.x - thickness, topLeft.y - thickness,
-		(bottomRight.x - topLeft.x) + 2*thickness, 1 + 2*thickness
+		sTopLeft.x - thickness, sTopLeft.y - thickness,
+		(sBottomRight.x - sTopLeft.x) + 2*thickness, 1 + 2*thickness
 	};
 	SDL_RenderFillRect(r, &rc);
 	// right edge
 	rc = {
-		bottomRight.x - thickness, topLeft.y - thickness,
-		1 + 2*thickness, (bottomRight.y - topLeft.y) + 2*thickness
+		sBottomRight.x - thickness, sTopLeft.y - thickness,
+		1 + 2*thickness, (sBottomRight.y - sTopLeft.y) + 2*thickness
 	};
 	SDL_RenderFillRect(r, &rc);
 	// bottom edge
 	rc = {
-		topLeft.x - thickness, bottomRight.y - thickness,
-		(bottomRight.x - topLeft.x) + 2*thickness, 1 + 2*thickness
+		sTopLeft.x - thickness, sBottomRight.y - thickness,
+		(sBottomRight.x - sTopLeft.x) + 2*thickness, 1 + 2*thickness
 	};
 	SDL_RenderFillRect(r, &rc);
 }
 
 bool WorldArea::containsPoint(WorldPoint const& wp) const {
-	WorldPoint topLeft = grid_->gridToWorld({gX_, gY_});
-	WorldPoint bottomRight = grid_->gridToWorld({gX_+gW_, gY_+gH_});
-	return wp.x > topLeft.x && wp.y > topLeft.y
-		&& wp.x < bottomRight.x && wp.y < bottomRight.y;
+	WorldPoint wTopLeft = grid_->gridToWorld(topLeft_);
+	WorldPoint wBottomRight = grid_->gridToWorld(bottomRight_);
+	return wp.x > wTopLeft.x && wp.y > wTopLeft.y
+		&& wp.x < wBottomRight.x && wp.y < wBottomRight.y;
 }

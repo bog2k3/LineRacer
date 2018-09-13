@@ -45,7 +45,7 @@ ScreenPoint Grid::gridToScreen(GridPoint p) const {
 }
 
 WorldPoint Grid::gridToWorld(GridPoint p) const {
-	return {p.x * size_, p.y * size_};
+	return {(float)p.x * size_, (float)p.y * size_};
 }
 
 GridPoint Grid::screenToGrid(ScreenPoint p) const {

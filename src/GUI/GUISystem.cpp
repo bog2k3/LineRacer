@@ -7,7 +7,7 @@
 #include <stdexcept>
 
 int GUISystem::addElement(std::unique_ptr<GUIElement> &&e) {
-	int i = 0;
+	unsigned i = 0;
 	while (i < elements_.size() && elements_[i].get())
 		i++;
 	if (i < elements_.size())
@@ -18,13 +18,13 @@ int GUISystem::addElement(std::unique_ptr<GUIElement> &&e) {
 }
 
 void GUISystem::removeElement(int elementHandle) {
-	assert(elementHandle >= 0 && elementHandle < elements_.size());
+	assert(elementHandle >= 0 && (unsigned)elementHandle < elements_.size());
 	assert(elements_[elementHandle].get());
 	elements_[elementHandle].reset();
 }
 
 GUIElement* GUISystem::getElement(int elementHandle) {
-	assert(elementHandle >= 0 && elementHandle < elements_.size());
+	assert(elementHandle >= 0 && (unsigned)elementHandle < elements_.size());
 	return elements_[elementHandle].get();
 }
 
@@ -71,7 +71,7 @@ bool GUISystem::translateEvent(SDL_Event const& e, GUIEvent &out) {
 }
 
 int GUISystem::getElementAtPosition(int x, int y) {
-	for (int i=0; i<elements_.size(); i++) {
+	for (unsigned i=0; i<elements_.size(); i++) {
 		if (elements_[i].get()
 			&& elements_[i]->area_.containsPoint(x, y)
 			&& elements_[i]->containsPoint(x, y)
@@ -146,13 +146,13 @@ bool GUISystem::handleEvent(SDL_Event const& sdl_ev) {
 	if (activeTouchElementHandle_ >= 0)
 		targetElement = activeTouchElementHandle_;
 	for (auto &e : additionalEvents) {
-		assert(e.first >= 0 && e.first < elements_.size() && elements_[e.first].get());
+		assert(e.first >= 0 && (unsigned)e.first < elements_.size() && elements_[e.first].get());
 		e.second.x -= elements_[e.first]->area_.x;
 		e.second.y -= elements_[e.first]->area_.y;
 		elements_[e.first]->handleEvent(e.second);
 	}
 	if (targetElement >= 0) {
-		assert(targetElement < elements_.size() && elements_[targetElement].get());
+		assert((unsigned)targetElement < elements_.size() && elements_[targetElement].get());
 		ev.x -= elements_[targetElement]->area_.x;
 		ev.y -= elements_[targetElement]->area_.y;
 		return elements_[targetElement]->handleEvent(ev);

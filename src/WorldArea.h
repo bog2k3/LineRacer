@@ -1,10 +1,10 @@
 #ifndef __WORLD_AREA_H__
 #define __WORLD_AREA_H__
 
-struct GridPoint;
+#include "Grid.h"
+
 struct WorldPoint;
 struct SDL_Renderer;
-class Grid;
 
 class WorldArea {
 public:
@@ -15,10 +15,13 @@ public:
 
 	bool containsPoint(WorldPoint const& wp) const;
 
+	GridPoint topLeft() const { return topLeft_; }
+	GridPoint bottomRight() const { return bottomRight_; }
+
 private:
 	Grid* grid_;
-	int gX_, gY_;
-	int gW_, gH_;
+	GridPoint topLeft_;
+	GridPoint bottomRight_;
 };
 
 #endif //__WORLD_AREA_H__
