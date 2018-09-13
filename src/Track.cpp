@@ -3,6 +3,7 @@
 #include "transform.h"
 #include "WorldArea.h"
 #include "color.h"
+#include "lineMath.h"
 
 #include <SDL2/SDL_render.h>
 #include <cmath>
@@ -38,7 +39,7 @@ void Track::render(SDL_Renderer* r) {
 		SDL_RenderDrawLine(r, p1.x, p1.y, p2.x, p2.y);
 
 		// if snapping close, draw the snap anchor
-		if (floatingVertex_ == polyVertex_[currentPolyIdx_][0]) {
+		if (polyVertex_[currentPolyIdx_].size() > 2 && floatingVertex_ == polyVertex_[currentPolyIdx_][0]) {
 			const int snapAnchorRadius = 3;
 			Colors::TRACK_SNAP.set(r);
 			ScreenPoint anchor = floatingVertex_.toScreen(grid_->getTransform());
@@ -52,6 +53,7 @@ void Track::reset() {
 	currentPolyIdx_ = 0;
 	polyVertex_[0].clear();
 	polyVertex_[1].clear();
+	partition_.clear();
 }
 
 void Track::enableDesignMode(bool enable) {
@@ -61,7 +63,7 @@ void Track::enableDesignMode(bool enable) {
 
 bool Track::checkCloseSnap() {
 	// if the floating vertex comes to within a grid square of the starting point, snap it to close the loop
-	if (polyVertex_[currentPolyIdx_].size()
+	if (polyVertex_[currentPolyIdx_].size() > 2
 		&& floatingVertex_.distanceTo(polyVertex_[currentPolyIdx_][0]) < grid_->cellSize()
 	) {
 		floatingVertex_ = polyVertex_[currentPolyIdx_][0];
@@ -88,14 +90,18 @@ bool Track::validateVertex() {
 		for (auto &v : vertices) {
 			int polyIdx = v.first;
 			int vIdx = v.second;
+			if (polyIdx == currentPolyIdx_ && (unsigned)vIdx+1 == polyVertex_[currentPolyIdx_].size())
+				continue; // we're not checking against last segment because that one is connected
 			if (vIdx > 0) {
 				// check line before vertex
-				if (intersectLine(polyVertex_[currentPolyIdx_].back(), floatingVertex_, polyVertex_[polyIdx][vIdx-1], polyVertex_[polyIdx][vIdx]))
+				if (lineMath::segmentIntersect(polyVertex_[currentPolyIdx_].back(), floatingVertex_, polyVertex_[polyIdx][vIdx-1], polyVertex_[polyIdx][vIdx]))
 					return false;
 			}
+			if (polyIdx == currentPolyIdx_ && (unsigned)vIdx+2 == polyVertex_[currentPolyIdx_].size())
+				continue; // we're not checking against last segment because that one is connected
 			if ((unsigned)vIdx + 1 < polyVertex_[polyIdx].size()) {
 				// check line following vertex
-				if (intersectLine(polyVertex_[currentPolyIdx_].back(), floatingVertex_, polyVertex_[polyIdx][vIdx], polyVertex_[polyIdx][vIdx+1]))
+				if (lineMath::segmentIntersect(polyVertex_[currentPolyIdx_].back(), floatingVertex_, polyVertex_[polyIdx][vIdx], polyVertex_[polyIdx][vIdx+1]))
 					return false;
 			}
 		}
@@ -111,8 +117,11 @@ bool Track::validateVertex() {
 }
 
 void Track::pushVertex() {
+	int crtIndex = polyVertex_[currentPolyIdx_].size();
+	partition_.addVertex({currentPolyIdx_, crtIndex}, floatingVertex_);
+	if (crtIndex > 0)
+		partition_.addSegment({currentPolyIdx_, {crtIndex-1, crtIndex}}, polyVertex_[currentPolyIdx_].back(), floatingVertex_);
 	polyVertex_[currentPolyIdx_].push_back(floatingVertex_);
-	partition_.addVertex({currentPolyIdx_, polyVertex_[currentPolyIdx_].size() - 1}, floatingVertex_);
 }
 
 void Track::pointerMoved(float x, float y) {
@@ -153,11 +162,6 @@ void Track::pointerTouch(bool on, float x, float y) {
 }
 
 bool Track::intersectLine(GridPoint const& p1, GridPoint const& p2) const {
-	// ...
-	return false;
-}
-
-bool Track::intersectLine(WorldPoint const& l1a, WorldPoint const& l1b, WorldPoint const& l2a, WorldPoint const& l2b) {
 	// ...
 	return false;
 }

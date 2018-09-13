@@ -27,8 +27,6 @@ public:
 
 	// returns true if a line from grid point p1 to p2 intersects a track segment
 	bool intersectLine(GridPoint const& p1, GridPoint const& p2) const;
-	// returns true if a line segment l1a->l1b intersects another line segment l2a->l2b
-	static bool intersectLine(WorldPoint const& l1a, WorldPoint const& l1b, WorldPoint const& l2a, WorldPoint const& l2b);
 	// returns true if the point is inside the closed polygon
 	bool pointInsidePolygon(WorldPoint const& p, int polyIndex) const;
 
