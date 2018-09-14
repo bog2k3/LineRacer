@@ -91,7 +91,7 @@ void handleMouseEvent(SDL_Event &ev) {
 	case SDL_MOUSEWHEEL: {
 		// zoom view:
 		float oldScale = tr.scale;
-		tr.scale *= (ev.wheel.y > 0) ? 1.1f : 0.9f;
+		tr.scale *= (ev.wheel.y > 0) ? 1.1f : (1.f / 1.1f);
 
 		// now adjust the translation to keep it centered
 		float oldFitW = windowW / oldScale;

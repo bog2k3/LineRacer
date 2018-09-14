@@ -11,6 +11,16 @@ class WorldArea;
 struct GridPoint;
 struct SDL_Renderer;
 
+enum class TrackDesignStep {
+	DRAW,
+	STARTLINE
+};
+
+struct StartPosition {
+	GridPoint position;
+	std::pair<int, int> direction;
+};
+
 class Track {
 public:
 	// resolution : this is relative to grid's cell size, a resolution of 2 means the track vertices are twice as dense as the grid
@@ -21,14 +31,16 @@ public:
 
 	void reset(); // clears the track
 	void enableDesignMode(bool enable);
+	void setDesignStep(TrackDesignStep step);
 	bool isInDesignMode() const { return designMode_; }
 	void pointerMoved(float x, float y);	// x and y are world-space coordinates
 	void pointerTouch(bool on, float x, float y); // x and y are world-space coordinates
 
 	// returns true if a line from grid point p1 to p2 intersects a track segment
-	bool intersectLine(GridPoint const& p1, GridPoint const& p2) const;
+	// out_point: optional parameter -> intersection point will be stored in it
+	bool intersectLine(GridPoint const& p1, GridPoint const& p2, WorldPoint* out_point=nullptr) const;
 	// returns true if the point is inside the closed polygon
-	bool pointInsidePolygon(WorldPoint const& p, int polyIndex) const;
+	bool pointInsidePolygon(WorldPoint const& p, int polyIndex, float* out_winding=nullptr) const;
 
 private:
 	friend class TrackPartition;
@@ -41,6 +53,14 @@ private:
 	bool pointerPressed_ = false;
 	int currentPolyIdx_ = 0;
 	WorldPoint floatingVertex_;
+	TrackDesignStep designStep_ = TrackDesignStep::DRAW;
+
+	struct StartLine {
+		WorldPoint p1;
+		WorldPoint p2;
+		std::vector<StartPosition> startPositions;
+		bool isValid = false;
+	} startLine_;
 
 	// track consists of two closed polygons, one inner and one outer
 	std::vector<WorldPoint> polyVertex_[2];
@@ -49,7 +69,9 @@ private:
 	bool validateVertex();
 	void pushVertex();
 	// returns true if a line from point p1 to p2 intersects a track segment
-	bool intersectLine(WorldPoint const& p1, WorldPoint const& p2, bool skipLastSegment) const;
+	bool intersectLine(WorldPoint const& p1, WorldPoint const& p2, bool skipLastSegment, WorldPoint* out_point=nullptr) const;
+	void updateStartLine();
+	void saveStartLine();
 };
 
 #endif //__TRACK_H__
