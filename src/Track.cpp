@@ -141,12 +141,13 @@ void Track::pushVertex() {
 }
 
 void Track::updateStartLine() {
-	if (!pointInsidePolygon(floatingVertex_, 0) || pointInsidePolygon(floatingVertex_, 1)) {
+	GridPoint touch = grid_->worldToGrid(floatingVertex_);
+	if (!pointInsidePolygon(grid_->gridToWorld(touch), 0) || pointInsidePolygon(grid_->gridToWorld(touch), 1)) {
 		startLine_.isValid = false;
 		return;
 	}
 	startLine_.isValid = true;
-	GridPoint touch = grid_->worldToGrid(floatingVertex_);
+	
 	// sweep all 4 possible directions and chose the one that intersects both polygons at the shortest distance
 	std::pair<int, int> directions[] {
 		{1, 0}, {0, 1}, {1, 1}, {-1, 1}
@@ -178,12 +179,12 @@ void Track::updateStartLine() {
 	startLine_.p2 = intersections[imin].p2;
 	startLine_.startPositions.clear();
 	GridPoint p = grid_->worldToGrid(startLine_.p1);
-	for (int i=0; i<intersections[imin].distance; p.x+=directions[imin].first, p.y+=directions[imin].second, i++) {
+	for (int i=0; i<intersections[imin].distance; p.x-=directions[imin].first, p.y-=directions[imin].second, i++) {
 		if (!pointInsidePolygon(grid_->gridToWorld(p), 0) || pointInsidePolygon(grid_->gridToWorld(p), 1))
 			continue;
 		bool CW = lineMath::orientation(intersections[imin].p1, intersections[imin].p2, floatingVertex_) == 1;
-		int dirx = directions[imin].second * (CW ? 1 : -1);
-		int diry = directions[imin].first * (CW ? -1 : 1);
+		int dirx = directions[imin].second * (CW ? -1 : 1);
+		int diry = directions[imin].first * (CW ? 1 : -1);
 		if (!intersectLine(p, {p.x + dirx, p.y + diry})) {
 			// this is a valid start position and direction
 			startLine_.startPositions.push_back({p, {dirx, diry}});
@@ -227,7 +228,7 @@ void Track::pointerTouch(bool on, float x, float y) {
 	floatingVertex_.y = y;
 	switch (designStep_) {
 	case TrackDesignStep::DRAW:
-		if (on && validateVertex()) {
+		if (on && validateVertex()) {	// TODO: bug here - detecting false collision with first line segment (which should indeed touch at the end)
 			bool closed = checkCloseSnap();
 			// add the next vertex
 			pushVertex();

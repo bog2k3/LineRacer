@@ -106,6 +106,8 @@ WorldPoint intersectionPoint(WorldPoint const& p, WorldPoint const& p2, WorldPoi
 		if (0 <= pqdots && pqdots <= dot(s[0], s[1], s[0], s[1])) {
 			return p;
 		}
+		assert(false && "you didn't check the segments for intersection before calling this, did you?");
+		return {0, 0};
     }
 
     // t = (q - p) x s / (r x s)
