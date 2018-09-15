@@ -23,6 +23,7 @@ namespace Colors {
 	static const Color BUTTON_FILL {80, 215, 235};
 	static const Color BUTTON_FILL_HOVER {135, 225, 240};
 	static const Color BUTTON_FILL_PRESSED {25, 145, 215};
+	static const Color STARTLINE {0, 128, 0};
 };
 
 #endif //__COLOR_H__

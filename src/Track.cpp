@@ -47,6 +47,18 @@ void Track::render(SDL_Renderer* r) {
 			SDL_RenderFillRect(r, &rc);
 		}
 	}
+	if (designMode_ && designStep_ == TrackDesignStep::STARTLINE && startLine_.isValid) {
+		Colors::STARTLINE.set(r);
+		auto s1 = startLine_.p1.toScreen(grid_->getTransform());
+		auto s2 = startLine_.p2.toScreen(grid_->getTransform());
+		SDL_RenderDrawLine(r, s1.x, s1.y, s2.x, s2.y);
+		for (auto &spos : startLine_.startPositions) {
+			auto p1 = grid_->gridToScreen(spos.position);
+			auto p2 = grid_->gridToScreen({spos.position.x + spos.direction.first, spos.position.y + spos.direction.second});
+			SDL_RenderDrawLine(r, p1.x, p1.y, p2.x, p2.y);
+		}
+	}
+	
 #if 0 || DEBUG_CODE_TO_TEST_POINT_INSIDE_POLYGON
 	if (!designMode_ && polyVertex_[1].size()) {
 		static std::vector<std::pair<WorldPoint, bool>> vPoints;
