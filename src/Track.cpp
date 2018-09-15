@@ -167,7 +167,7 @@ void Track::updateStartLine() {
 				p.x += directions[i].first * j;
 				p.y += directions[i].second * j;
 				intersections[i].distance++;
-			} while (!intersectLine(touch, p, j==1 ? &intersections[i].p1 : &intersections[i].p2));
+			} while (!intersectLine(touch, p, j==-1 ? &intersections[i].p1 : &intersections[i].p2));
 		}
 	}
 	int imin = 0;
@@ -179,12 +179,12 @@ void Track::updateStartLine() {
 	startLine_.p2 = intersections[imin].p2;
 	startLine_.startPositions.clear();
 	GridPoint p = grid_->worldToGrid(startLine_.p1);
-	for (int i=0; i<intersections[imin].distance; p.x-=directions[imin].first, p.y-=directions[imin].second, i++) {
+	for (int i=0; i<intersections[imin].distance; p.x+=directions[imin].first, p.y+=directions[imin].second, i++) {
 		if (!pointInsidePolygon(grid_->gridToWorld(p), 0) || pointInsidePolygon(grid_->gridToWorld(p), 1))
 			continue;
 		bool CW = lineMath::orientation(intersections[imin].p1, intersections[imin].p2, floatingVertex_) == 1;
-		int dirx = directions[imin].second * (CW ? -1 : 1);
-		int diry = directions[imin].first * (CW ? 1 : -1);
+		int dirx = directions[imin].second * (CW ? 1 : -1);
+		int diry = directions[imin].first * (CW ? -1 : 1);
 		if (!intersectLine(p, {p.x + dirx, p.y + diry})) {
 			// this is a valid start position and direction
 			startLine_.startPositions.push_back({p, {dirx, diry}});
