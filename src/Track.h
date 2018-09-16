@@ -38,7 +38,8 @@ public:
 
 	// returns true if a line from grid point p1 to p2 intersects a track segment
 	// out_point: optional parameter -> intersection point will be stored in it
-	bool intersectLine(GridPoint const& p1, GridPoint const& p2, WorldPoint* out_point=nullptr) const;
+	// out_polyIndex: optional -> polygon index that was intersected will be stored in it
+	bool intersectLine(GridPoint const& p1, GridPoint const& p2, WorldPoint* out_point=nullptr, int *out_polyIndex=nullptr) const;
 	// returns true if the point is inside the closed polygon
 	bool pointInsidePolygon(WorldPoint const& p, int polyIndex, float* out_winding=nullptr) const;
 
@@ -69,7 +70,7 @@ private:
 	bool validateVertex();
 	void pushVertex();
 	// returns true if a line from point p1 to p2 intersects a track segment
-	bool intersectLine(WorldPoint const& p1, WorldPoint const& p2, bool skipLastSegment, WorldPoint* out_point=nullptr) const;
+	bool intersectLine(WorldPoint const& p1, WorldPoint const& p2, bool skipLastSegment, WorldPoint* out_point=nullptr, int *out_polyIndex=nullptr) const;
 	void updateStartLine();
 	void saveStartLine();
 };

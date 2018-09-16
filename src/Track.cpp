@@ -88,6 +88,7 @@ void Track::reset() {
 	polyVertex_[0].clear();
 	polyVertex_[1].clear();
 	partition_.clear();
+	startLine_.isValid = false;
 }
 
 void Track::enableDesignMode(bool enable) {
@@ -141,45 +142,58 @@ void Track::pushVertex() {
 }
 
 void Track::updateStartLine() {
+	startLine_.isValid = false;
 	GridPoint touch = grid_->worldToGrid(floatingVertex_);
 	if (!pointInsidePolygon(grid_->gridToWorld(touch), 0) || pointInsidePolygon(grid_->gridToWorld(touch), 1)) {
-		startLine_.isValid = false;
 		return;
 	}
-	startLine_.isValid = true;
 	
 	// sweep all 4 possible directions and chose the one that intersects both polygons at the shortest distance
 	std::pair<int, int> directions[] {
 		{1, 0}, {0, 1}, {1, 1}, {-1, 1}
 	};
 	struct {
-		int distance;
+		int steps;
+		float distance;
+		int polyId;
 		WorldPoint p1;
 		WorldPoint p2;
 	} intersections[4];
 	for (int i=0; i<4; i++) {
-		intersections[i].distance = 0;
+		intersections[i].steps = 0;
 		for (int j=-1; j<=1; j+=2) {
 			// when j==1 we sweep positive, j==-1 we sweep negative
 			GridPoint p = touch;
 			int steps = 0;
+			int lastPolyIdx = -1;
 			do {
 				p.x += directions[i].first * j;
 				p.y += directions[i].second * j;
-				intersections[i].distance++;
-			} while (!intersectLine(touch, p, j==-1 ? &intersections[i].p1 : &intersections[i].p2));
+				intersections[i].steps++;
+			} while (!intersectLine(touch, p, j==-1 ? &intersections[i].p1 : &intersections[i].p2, &lastPolyIdx));
+			if (j==-1)
+				intersections[i].polyId = lastPolyIdx;
+			else if (intersections[i].polyId == lastPolyIdx) {
+				intersections[i].steps = 10000; // we don't count this one if it doesn't intersect both polygons
+			}
 		}
+		intersections[i].distance = intersections[i].steps;
+		if (i>=2)
+			 intersections[i].distance *= 1.41f;	// because last two are diagonals
 	}
 	int imin = 0;
 	for (int i=1; i<4; i++) {
 		if (intersections[i].distance < intersections[imin].distance)
 			imin = i;
 	}
+	if (intersections[imin].steps == 10000)
+		return; // no valid start line found
+	startLine_.isValid = true;
 	startLine_.p1 = intersections[imin].p1;
 	startLine_.p2 = intersections[imin].p2;
 	startLine_.startPositions.clear();
 	GridPoint p = grid_->worldToGrid(startLine_.p1);
-	for (int i=0; i<intersections[imin].distance; p.x+=directions[imin].first, p.y+=directions[imin].second, i++) {
+	for (int i=0; i<intersections[imin].steps; p.x+=directions[imin].first, p.y+=directions[imin].second, i++) {
 		if (!pointInsidePolygon(grid_->gridToWorld(p), 0) || pointInsidePolygon(grid_->gridToWorld(p), 1))
 			continue;
 		bool CW = lineMath::orientation(intersections[imin].p1, intersections[imin].p2, floatingVertex_) == 1;
@@ -250,7 +264,7 @@ void Track::pointerTouch(bool on, float x, float y) {
 	}
 }
 
-bool Track::intersectLine(WorldPoint const& p1, WorldPoint const& p2, bool skipLastSegment, WorldPoint* out_point) const {
+bool Track::intersectLine(WorldPoint const& p1, WorldPoint const& p2, bool skipLastSegment, WorldPoint* out_point, int *out_polyIndex) const {
 	WorldPoint topLeft {std::min(p1.x, p2.x), std::min(p1.y, p2.y)};
 	WorldPoint bottomRight {std::max(p1.x, p2.x), std::max(p1.y, p2.y)};
 	auto vertices = partition_.getVerticesInArea(topLeft, bottomRight);
@@ -271,6 +285,8 @@ bool Track::intersectLine(WorldPoint const& p1, WorldPoint const& p2, bool skipL
 			if (lineMath::segmentIntersect(p1, p2, polyVertex_[polyIdx][vIdx], polyVertex_[polyIdx][vIdx+1])) {
 				if (out_point)
 					*out_point = lineMath::intersectionPoint(p1, p2, polyVertex_[polyIdx][vIdx], polyVertex_[polyIdx][vIdx+1]);
+				if (out_polyIndex)
+					*out_polyIndex = polyIdx;
 				return true;
 			}
 		}
@@ -278,8 +294,8 @@ bool Track::intersectLine(WorldPoint const& p1, WorldPoint const& p2, bool skipL
 	return false;
 }
 
-bool Track::intersectLine(GridPoint const& p1, GridPoint const& p2, WorldPoint* out_point) const {
-	return intersectLine(grid_->gridToWorld(p1), grid_->gridToWorld(p2), false, out_point);
+bool Track::intersectLine(GridPoint const& p1, GridPoint const& p2, WorldPoint* out_point, int *out_polyIndex) const {
+	return intersectLine(grid_->gridToWorld(p1), grid_->gridToWorld(p2), false, out_point, out_polyIndex);
 }
 
 bool Track::pointInsidePolygon(WorldPoint const& p, int polyIndex, float* out_winding) const {

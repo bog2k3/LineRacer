@@ -11,3 +11,4 @@ LineRacer
 .cmake_dirty
 LineRacer.*
 .codelite
+.tern-*
