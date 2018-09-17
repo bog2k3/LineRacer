@@ -47,7 +47,7 @@ void Track::render(SDL_Renderer* r) {
 			SDL_RenderFillRect(r, &rc);
 		}
 	}
-	if (designMode_ && designStep_ == TrackDesignStep::STARTLINE && startLine_.isValid) {
+	if (startLine_.isValid) {
 		Colors::STARTLINE.set(r);
 		auto s1 = startLine_.p1.toScreen(grid_->getTransform());
 		auto s2 = startLine_.p2.toScreen(grid_->getTransform());
@@ -58,7 +58,7 @@ void Track::render(SDL_Renderer* r) {
 			SDL_RenderDrawLine(r, p1.x, p1.y, p2.x, p2.y);
 		}
 	}
-	
+
 #if 0 || DEBUG_CODE_TO_TEST_POINT_INSIDE_POLYGON
 	if (!designMode_ && polyVertex_[1].size()) {
 		static std::vector<std::pair<WorldPoint, bool>> vPoints;
@@ -147,7 +147,7 @@ void Track::updateStartLine() {
 	if (!pointInsidePolygon(grid_->gridToWorld(touch), 0) || pointInsidePolygon(grid_->gridToWorld(touch), 1)) {
 		return;
 	}
-	
+
 	// sweep all 4 possible directions and chose the one that intersects both polygons at the shortest distance
 	std::pair<int, int> directions[] {
 		{1, 0}, {0, 1}, {1, 1}, {-1, 1}
@@ -164,7 +164,6 @@ void Track::updateStartLine() {
 		for (int j=-1; j<=1; j+=2) {
 			// when j==1 we sweep positive, j==-1 we sweep negative
 			GridPoint p = touch;
-			int steps = 0;
 			int lastPolyIdx = -1;
 			do {
 				p.x += directions[i].first * j;

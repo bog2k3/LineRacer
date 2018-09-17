@@ -24,6 +24,10 @@ bool segmentIntersect(WorldPoint const& p1a, WorldPoint const& p1b, WorldPoint c
 // returns the intersection point of two segments. This function assumes the segments DO intersect, so you need to check that before
 WorldPoint intersectionPoint(WorldPoint const& p1a, WorldPoint const& p1b, WorldPoint const& p2a, WorldPoint const& p2b);
 
+// Given three colinear points p, q, r, the function checks if
+// point q lies on line segment 'pr'
+bool onSegment(WorldPoint const& p, WorldPoint const& q, WorldPoint const& r);
+
 } //namespace
 
 #endif //__LINE_MATH_H__

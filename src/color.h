@@ -24,6 +24,12 @@ namespace Colors {
 	static const Color BUTTON_FILL_HOVER {135, 225, 240};
 	static const Color BUTTON_FILL_PRESSED {25, 145, 215};
 	static const Color STARTLINE {0, 128, 0};
+
+	static const Color PLAYER1 {0, 165, 235};
+	static const Color PLAYER2 {235, 28, 36};
+	static const Color PLAYER3 {34, 177, 76};
+	static const Color PLAYER4 {255, 201, 14};
+	static const Color PLAYER5 {163, 73, 164};
 };
 
 #endif //__COLOR_H__

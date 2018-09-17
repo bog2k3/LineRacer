@@ -36,12 +36,19 @@ public:
 	void pointerMoved(float x, float y);	// x and y are world-space coordinates
 	void pointerTouch(bool on, float x, float y); // x and y are world-space coordinates
 
+	bool isReady() const { return !designMode_ && startLine_.isValid; }	// returns true if the track is ready for the game
+
+	std::vector<StartPosition> getStartPositions() const { return isReady() ? startLine_.startPositions : decltype(startLine_.startPositions){}; }
+
 	// returns true if a line from grid point p1 to p2 intersects a track segment
 	// out_point: optional parameter -> intersection point will be stored in it
 	// out_polyIndex: optional -> polygon index that was intersected will be stored in it
 	bool intersectLine(GridPoint const& p1, GridPoint const& p2, WorldPoint* out_point=nullptr, int *out_polyIndex=nullptr) const;
 	// returns true if the point is inside the closed polygon
 	bool pointInsidePolygon(WorldPoint const& p, int polyIndex, float* out_winding=nullptr) const;
+
+	Grid* grid() const { return grid_; }
+	WorldArea* worldArea() const { return worldArea_; }
 
 private:
 	friend class TrackPartition;

@@ -2,6 +2,7 @@
 #define __TRANSFORM_H__
 
 #include <cmath>
+#include <utility>
 
 struct Transform {
 	float scale = 1;	// real-to-virtual pixel ratio
@@ -43,6 +44,22 @@ struct GridPoint {
 	GridPoint() = default;
 	GridPoint(int x, int y) : x(x), y(y), distance(0) {}
 	GridPoint(int x, int y, float dist) : x(x), y(y), distance(dist) {}
+
+	bool operator==(GridPoint const& p) const {
+		return x==p.x && y==p.y;
+	}
+};
+
+struct Arrow {
+	GridPoint from;
+	GridPoint to;
+
+	int length() const;
+	std::pair<int, int> direction() const;
+
+	static Arrow fromPointAndDir(GridPoint p, int dirX, int dirY) {
+		return Arrow{p, {p.x + dirX, p.y + dirY}};
+	}
 };
 
 #endif //__TRANSFORM_H__

@@ -2,6 +2,7 @@
 #include "Grid.h"
 #include "WorldArea.h"
 #include "Track.h"
+#include "Game.h"
 #include "GUI/GUISystem.h"
 #include "GUI/Button.h"
 #include "color.h"
@@ -13,7 +14,8 @@
 const int windowW = 1280;
 const int windowH = 720;
 const int squareSize = 20;
-float trackResolution = 2.f;
+const float trackResolution = 2.f;
+const float TURN_TIME_LIMIT = 5.f; // seconds
 
 bool SIGNAL_QUIT = false;
 
@@ -21,19 +23,21 @@ Transform tr;
 Grid grid(squareSize, windowW, windowH);
 WorldArea warea(&grid, {1, 1}, {63, 35});
 Track track(&grid, &warea, trackResolution);
+Game game(&track, TURN_TIME_LIMIT);
 
 GUISystem guiSystem;
 
 GridPoint mousePoint{0, 0, 0};
 
 void update(float dt) {
-
+	game.update(dt);
 }
 
 void render(SDL_Renderer *renderer) {
 	grid.render(renderer);
 	warea.render(renderer);
 	track.render(renderer);
+	game.render(renderer);
 
 	// draw grid point closest to mouse:
 	if (!track.isInDesignMode()) {
@@ -145,6 +149,15 @@ void initialize() {
 		}
 	});
 	guiSystem.addElement(std::unique_ptr<Button>(btn));
+
+	btn = new Button(30, 70, 120, 30);
+	btn->setText("Play!");
+	btn->setAction([&](Button *b) {
+		if (track.isReady()) {
+			game = Game(&track, TURN_TIME_LIMIT);
+			game.start();
+		}
+	});
 }
 
 #ifdef __WIN32__
