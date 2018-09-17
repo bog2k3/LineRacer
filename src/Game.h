@@ -29,6 +29,7 @@ public:
 	};
 
 	GameState state() const { return state_; }
+	Player* activePlayer() const { return currentPlayer_ >= 0 && currentPlayer_ < players_.size() ? players_[currentPlayer_] : nullptr; }
 
 	bool pathIsFree(Arrow const& a); // returns true if the arrow doesn't intersect any player's position
 

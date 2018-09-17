@@ -9,11 +9,10 @@ void Player::activateTurn(TurnType type) {
 	hasAction_ = false;
 }
 
-void Player::performAction(GridPoint point) {
+void Player::confirmNextPoint() {
 	if (!isTurnActive() || hasAction_)
 		return;
 	hasAction_ = true;
-	selectedPoint_ = point;
 }
 
 void Player::setAllowedVectors(std::vector<Arrow> vectors) {

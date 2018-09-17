@@ -3,6 +3,7 @@
 #include "WorldArea.h"
 #include "Track.h"
 #include "Game.h"
+#include "Player.h"
 #include "GUI/GUISystem.h"
 #include "GUI/Button.h"
 #include "color.h"
@@ -155,6 +156,8 @@ void initialize() {
 	btn->setAction([&](Button *b) {
 		if (track.isReady()) {
 			game = Game(&track, TURN_TIME_LIMIT);
+			Player *playerOne = new Player(Player::TYPE_HUMAN);	// major memory leak, just for debugging
+			game.addPlayer(playerOne);
 			game.start();
 		}
 	});
