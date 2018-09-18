@@ -14,28 +14,28 @@ struct Color {
 };
 
 namespace Colors {
-	static const Color BACKGROUND {0xFF, 0xF0, 0xE6};
-	static const Color GRID {190, 210, 255};
-	static const Color MOUSE_POINT {65, 120, 255};
-	static const Color TRACK {10, 35, 90};
-	static const Color TRACK_TRANSP {10, 35, 90, 64};
-	static const Color TRACK_SNAP {10, 145, 225};
-	static const Color STARTLINE {0, 128, 0};
+	extern const Color BACKGROUND;
+	extern const Color GRID;
+	extern const Color MOUSE_POINT;
+	extern const Color TRACK;
+	extern const Color TRACK_TRANSP;
+	extern const Color TRACK_SNAP;
+	extern const Color STARTLINE;
 
-	static const Color OUT_TRACK_MOVE {210, 30, 0};
-	static const Color VALID_MOVE {0, 210, 110};
+	extern const Color OUT_TRACK_MOVE;
+	extern const Color VALID_MOVE;
 
-	static const Color UNCONFIRMED_ARROW {40, 40, 40, 64};
-	static const Color PLAYER1 {0, 165, 235};
-	static const Color PLAYER2 {235, 28, 36};
-	static const Color PLAYER3 {34, 177, 76};
-	static const Color PLAYER4 {255, 201, 14};
-	static const Color PLAYER5 {163, 73, 164};
+	extern const Color UNCONFIRMED_ARROW;
+	extern const Color PLAYER1;
+	extern const Color PLAYER2;
+	extern const Color PLAYER3;
+	extern const Color PLAYER4;
+	extern const Color PLAYER5;
 
-	static const Color BUTTON_BORDER {5, 100, 110, 128};
-	static const Color BUTTON_FILL {80, 215, 235};
-	static const Color BUTTON_FILL_HOVER {135, 225, 240};
-	static const Color BUTTON_FILL_PRESSED {25, 145, 215};
+	extern const Color BUTTON_BORDER;
+	extern const Color BUTTON_FILL;
+	extern const Color BUTTON_FILL_HOVER;
+	extern const Color BUTTON_FILL_PRESSED;
 };
 
 #endif //__COLOR_H__

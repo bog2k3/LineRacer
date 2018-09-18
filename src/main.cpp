@@ -173,7 +173,9 @@ void initialize() {
 		if (track.isReady()) {
 			game.reset();
 			Player *playerOne = new Player(Player::TYPE_HUMAN);	// major memory leak, just for debugging
+			Player *playerTwo = new Player(Player::TYPE_HUMAN);	// major memory leak, just for debugging
 			game.addPlayer(playerOne);
+			game.addPlayer(playerTwo);
 			game.start();
 		}
 	});
