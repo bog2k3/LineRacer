@@ -14,11 +14,15 @@
 Game::Game(Track* track, float turnTimeLimit)
 	: track_(track), turnTimeLimit_(turnTimeLimit)
 {
-	startPosTaken_.assign(track_->getStartPositions().size(), false);
 }
 
 Game::~Game() {
 	stop();
+}
+
+void Game::setState(GameState state) {
+	state_ = state;
+	onStateChange.trigger(state);
 }
 
 void Game::stop() {
@@ -67,20 +71,36 @@ bool Game::addPlayer(Player* player) {
 	if (players_.size() < track_->getStartPositions().size()) {
 		player->setColor(players_.size());
 		players_.push_back(player);
+		arrows_.push_back({});
 		return true;
 	} else
 		return false;
 }
 
 void Game::start() {
-	state_ = STATE_START_SELECTION;
+	if (state_ != STATE_STOPPED && state_ != STATE_WAITING_PLAYERS)
+		throw std::runtime_error("game already started!");
+	startPosTaken_.assign(track_->getStartPositions().size(), false);
+	setState(STATE_START_SELECTION);
 	currentPlayer_ = -1;
 	nextTurn();
 }
 
+void Game::reset() {
+	if (state_ != STATE_STOPPED)
+		stop();
+	players_.clear();
+	arrows_.clear();
+	startPosTaken_.clear();
+	currentPlayer_ = 0;
+	turnTimer_ = 0;
+
+	setState(STATE_WAITING_PLAYERS);
+}
+
 void Game::nextTurn() {
 	if (players_.size() == 0)
-		state_ = STATE_STOPPED;
+		setState(STATE_STOPPED);
 	if (state_ == STATE_WAITING_PLAYERS || state_ == STATE_STOPPED)
 		return;
 	if (currentPlayer_ >= 0)
@@ -92,19 +112,20 @@ void Game::nextTurn() {
 		// all players took their turn for this round
 		currentPlayer_ = 0;
 		if (state_ == STATE_START_SELECTION) {
-			state_ = STATE_PLAYING;
+			setState(STATE_PLAYING);
 		} else {
 			while (players_[currentPlayer_]->isFinished() && currentPlayer_ < players_.size())
 				currentPlayer_++;
 			if (currentPlayer_ == players_.size()) {
 				// all players finished the game
-				state_ = STATE_STOPPED;
+				setState(STATE_STOPPED);
 				return;
 			}
 		}
 	}
 	players_[currentPlayer_]->activateTurn(state_ == STATE_START_SELECTION ? Player::TURN_SELECT_START : Player::TURN_MOVE);
 	players_[currentPlayer_]->setAllowedVectors(getPlayerVectors());
+	onTurnAdvance.trigger();
 }
 
 bool Game::checkWin() {

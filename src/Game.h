@@ -2,6 +2,7 @@
 #define __GAME_H__
 
 #include "transform.h"
+#include "event.h"
 
 #include <vector>
 
@@ -17,6 +18,7 @@ public:
 	void update(float dt);
 	void render(SDL_Renderer* r);
 
+	void reset(); // resets the entire game, and removes all players
 	bool addPlayer(Player* player);	// returns true if player was added and false if it couldn't be added (session is full)
 	void start();
 	void stop();
@@ -33,6 +35,9 @@ public:
 
 	bool pathIsFree(Arrow const& a); // returns true if the arrow doesn't intersect any player's position
 
+	Event<void(GameState)> onStateChange;
+	Event<void()> onTurnAdvance;
+
 private:
 	Track* track_;
 	float turnTimeLimit_;
@@ -40,9 +45,10 @@ private:
 	std::vector<std::vector<Arrow>> arrows_;
 	std::vector<bool> startPosTaken_;
 	GameState state_ = STATE_WAITING_PLAYERS;
-	unsigned currentPlayer_ = 0;
+	int currentPlayer_ = 0;
 	float turnTimer_ = 0.f;
 
+	void setState(GameState state);
 	void nextTurn();
 	bool checkWin();
 	void processPlayerSelection();

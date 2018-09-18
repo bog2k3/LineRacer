@@ -4,13 +4,14 @@
 #include "transform.h"
 
 class Game;
+class Grid;
 struct SDL_Renderer;
 
 // controller for local human player
 // handles local input events and translates them into Player actions
 class HumanController {
 public:
-	HumanController(Game& game);
+	HumanController(Game& game, Grid& grid);
 	~HumanController() {}
 
 	void onPointerMoved(GridPoint where);
@@ -22,6 +23,7 @@ public:
 
 private:
 	Game& game_;
+	Grid& grid_;
 	bool pointerDown_ = false;
 	GridPoint selectedPoint_;
 	GridPoint hoverPoint_;

@@ -1,5 +1,11 @@
 #include "Player.h"
 
+Player::Player(PlayerType type)
+	: type_(type)
+{
+
+}
+
 void Player::endTurn() {
 	turn_ = TURN_INACTIVE;
 }

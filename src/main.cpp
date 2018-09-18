@@ -4,6 +4,7 @@
 #include "Track.h"
 #include "Game.h"
 #include "Player.h"
+#include "HumanController.h"
 #include "GUI/GUISystem.h"
 #include "GUI/Button.h"
 #include "color.h"
@@ -25,6 +26,7 @@ Grid grid(squareSize, windowW, windowH);
 WorldArea warea(&grid, {1, 1}, {63, 35});
 Track track(&grid, &warea, trackResolution);
 Game game(&track, TURN_TIME_LIMIT);
+HumanController hctrl(game, grid);
 
 GUISystem guiSystem;
 
@@ -50,6 +52,8 @@ void render(SDL_Renderer *renderer) {
 		Colors::GRID.set(renderer);
 		SDL_RenderFillRect(renderer, &rc);
 	}
+
+	hctrl.render(renderer);
 
 	// draw user interface
 	guiSystem.render(renderer);
@@ -77,6 +81,8 @@ void handleMouseEvent(SDL_Event &ev) {
 			if (track.isInDesignMode()) {
 				WorldPoint wp = ScreenPoint{ev.motion.x, ev.motion.y}.toWorld(tr);
 				track.pointerTouch(ev.button.state == SDL_PRESSED, wp.x, wp.y);
+			} else {
+				hctrl.onPointerTouch(ev.button.state == SDL_PRESSED);
 			}
 		}
 	break;
@@ -90,6 +96,8 @@ void handleMouseEvent(SDL_Event &ev) {
 		} else if (track.isInDesignMode()) {
 			WorldPoint wp = ScreenPoint{ev.motion.x, ev.motion.y}.toWorld(tr);
 			track.pointerMoved(wp.x, wp.y);
+		} else {
+			hctrl.onPointerMoved(grid.screenToGrid({ev.motion.x, ev.motion.y}));
 		}
 		mousePoint = grid.screenToGrid({ev.motion.x, ev.motion.y});
 	break;
@@ -138,6 +146,11 @@ void handleSDLEvent(SDL_Event &ev) {
 }
 
 void initialize() {
+
+	game.onTurnAdvance.add([&]() {
+		hctrl.nextTurn();
+	});
+
 	// initialize UI
 	Button* btn = new Button(30, 30, 120, 30);
 	btn->setText("Draw Track");
@@ -155,12 +168,13 @@ void initialize() {
 	btn->setText("Play!");
 	btn->setAction([&](Button *b) {
 		if (track.isReady()) {
-			game = Game(&track, TURN_TIME_LIMIT);
+			game.reset();
 			Player *playerOne = new Player(Player::TYPE_HUMAN);	// major memory leak, just for debugging
 			game.addPlayer(playerOne);
 			game.start();
 		}
 	});
+	guiSystem.addElement(std::unique_ptr<Button>(btn));
 }
 
 #ifdef __WIN32__
