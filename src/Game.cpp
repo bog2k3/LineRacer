@@ -51,6 +51,8 @@ void Game::update(float dt) {
 }
 
 void Game::render(SDL_Renderer* r) {
+	if (state_ != STATE_START_SELECTION && state_ != STATE_PLAYING)
+		return;
 	static const Color* colors[] {
 		&Colors::PLAYER1,
 		&Colors::PLAYER2,
@@ -58,7 +60,7 @@ void Game::render(SDL_Renderer* r) {
 		&Colors::PLAYER4,
 		&Colors::PLAYER5,
 	};
-	for (unsigned i=0; i<players_.size(); i++) {
+	for (unsigned i=(currentPlayer_+1)%players_.size(), n=0; n<players_.size(); n++, i=(i+1)%players_.size()) {
 		colors[players_[i]->color()]->set(r);
 		for (auto &a : arrows_[i]) {
 			ScreenPoint p1 = track_->grid()->gridToScreen(a.from);

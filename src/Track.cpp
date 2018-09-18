@@ -9,7 +9,7 @@
 #include <SDL2/SDL_render.h>
 #include <cassert>
 
-static const int PARTITION_CELL_SPAN = 10;
+static const int PARTITION_CELL_SPAN = 5;
 
 Track::Track(Grid* grid, WorldArea* warea, float resolution)
 	: grid_(grid), worldArea_(warea), partition_(*this, PARTITION_CELL_SPAN), resolution_(resolution)
@@ -61,27 +61,64 @@ void Track::render(SDL_Renderer* r) {
 		}
 	}
 
-#if 0 || DEBUG_CODE_TO_TEST_POINT_INSIDE_POLYGON
-	if (!designMode_ && polyVertex_[1].size()) {
-		static std::vector<std::pair<WorldPoint, bool>> vPoints;
-		if (vPoints.size() < 10000) {
+#if 1 || DEBUG_CODE_TO_TEST_POINT_INSIDE_POLYGON
+	static std::vector<std::pair<WorldPoint, bool>> debugPoints;
+	static int sx = 0;
+	static int sy = 0;
+	if (designMode_ && currentPolyIdx_ == 1) {
+		WorldPoint tl = grid_->gridToWorld(worldArea_->topLeft());
+		WorldPoint br = grid_->gridToWorld(worldArea_->bottomRight());
+		while (sy+tl.y < br.y) {
+			while (sx+tl.x < br.x) {
+				WorldPoint wp{tl.x + sx, tl.y + sy};
+				bool green = pointInsidePolygon(wp, 0);
+				debugPoints.push_back({wp, green});
+				sx+=2;
+			}
+			sy+=2;
+			sx = 0;
+		}
+		/*if (debugPoints.size() < 10000) {
 			WorldPoint tl = grid_->gridToWorld(worldArea_->topLeft());
 			WorldPoint br = grid_->gridToWorld(worldArea_->bottomRight());
 			WorldPoint wp{rand() / (float)RAND_MAX * (br.x-tl.x) + tl.x, rand() / (float)RAND_MAX * (br.y-tl.y) + tl.y};
 			bool green = pointInsidePolygon(wp, 0) && !pointInsidePolygon(wp, 1);
-			vPoints.push_back({wp, green});
-		}
+			debugPoints.push_back({wp, green});
+		}*/
 		//SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
-		for (auto &p : vPoints) {
+		for (auto &p : debugPoints) {
 			if (p.second)
-				SDL_SetRenderDrawColor(r, 0, 255, 0, 255);
+				Colors::GREEN_TR.set(r);
 			else
-				SDL_SetRenderDrawColor(r, 255, 0, 0, 255);
+				Colors::RED_TR.set(r);
 			SDL_Rect rc{p.first.x, p.first.y, 2, 2};
 			SDL_RenderDrawRect(r, &rc);
 		}
 		//SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_NONE);
+	} else {
+		debugPoints.clear();
+		sx = sy = 0;
 	}
+#endif
+
+#if 0 || DEBUG_CODE_TO_TEST_PARTITIONING
+	for (int i=0; i<partition_.cells.size(); i++)
+		for (int j=0; j<partition_.cells[i].size(); j++) {
+			GridPoint tl {j*partition_.relativeCellSize_, i*partition_.relativeCellSize_};
+			tl.x += worldArea_->topLeft().x;
+			tl.y += worldArea_->topLeft().y;
+			GridPoint br {(j+1)*partition_.relativeCellSize_, (i+1)*partition_.relativeCellSize_};
+			br.x += worldArea_->topLeft().x;
+			br.y += worldArea_->topLeft().y;
+			ScreenPoint stl = grid_->gridToScreen(tl);
+			ScreenPoint sbr = grid_->gridToScreen(br);
+			SDL_Rect rc { stl.x, stl.y, sbr.x-stl.x-1, sbr.y-stl.y-1 };
+			if (partition_.cells[i][j].size())
+				Colors::GREEN_TR.set(r);
+			else
+				Colors::RED_TR.set(r);
+			SDL_RenderFillRect(r, &rc);
+		}
 #endif
 }
 
@@ -299,32 +336,29 @@ bool Track::intersectLine(GridPoint const& p1, GridPoint const& p2, WorldPoint* 
 	return intersectLine(grid_->gridToWorld(p1), grid_->gridToWorld(p2), false, out_point, out_polyIndex);
 }
 
-bool Track::pointInsidePolygon(WorldPoint const& p, int polyIndex, float* out_winding) const {
+bool Track::pointInsidePolygon(WorldPoint const& p, int polyIndex) const {
 	assert(polyIndex >= 0 && polyIndex <= 1);
 	if (polyVertex_[polyIndex].size() < 3)
 		return false;
-	auto lineSpansPoint = [](WorldPoint const& l1, WorldPoint const& l2, WorldPoint const& p) -> bool {
-		if ((l1.x - p.x) * (l2.x - p.x) < 0)
-			return true;
-		if ((l1.y - p.y) * (l2.y - p.y) < 0)
-			return true;
-		return false;
-	};
-	auto &verts = polyVertex_[polyIndex];
-	unsigned n = verts.size() - 1; // -1 because the last vertex is a duplicate of the first
-	double winding = 0.0;
-	bool polyCW = lineMath::clockwiseness(verts.data(), n) > 0;
-	for (unsigned i=0; i<n; i++) {
-		//if (!lineSpansPoint(verts[i], verts[i+1], p))
-		//	continue;
-		int orientation = lineMath::orientation(p, verts[i], verts[i+1]);
-		if (orientation == 0)
+	// draw an imaginary horizontal line from the left limit of worldArea through point p
+	// then see how many edges from the test polygon it intersects
+	// odd means point is inside, even means it's outside
+	WorldPoint start {grid_->gridToWorld(worldArea_->topLeft()).x-1, p.y};
+	auto verts = partition_.getVerticesInArea({start.x, p.y-1}, {p.x+1, p.y + 1});
+	int count = 0;
+	for (auto &v : verts) {
+		if (v.first != polyIndex)
 			continue;
-		double angle = lineMath::vectorAngle(p, verts[i], verts[i+1]);
-		bool inside = (orientation > 0) == polyCW;
-		winding += (inside ? +1 : -1) * angle;
+		// test edge before vertex
+		if (v.second > 0) {
+			const WorldPoint &v1 = polyVertex_[polyIndex][v.second-1];
+			const WorldPoint &v2 = polyVertex_[polyIndex][v.second];
+			if (v1.x >= p.x && v2.x >= p.x)
+				continue;
+			//if (v1.y == p.y || ((v1.y < p.y) != (v2.y < p.y)))
+			if (lineMath::segmentIntersect(v1, v2, start, p) == lineMath::INTERSECT_MIDDLE)
+				count++;
+		}
 	}
-	if (out_winding)
-		*out_winding = winding;
-	return winding > 0.1;
+	return (count % 2) != 0;
 }

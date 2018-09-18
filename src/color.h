@@ -14,6 +14,13 @@ struct Color {
 };
 
 namespace Colors {
+	extern const Color RED;
+	extern const Color RED_TR;
+	extern const Color GREEN;
+	extern const Color GREEN_TR;
+	extern const Color BLUE;
+	extern const Color BLUE_TR;
+	
 	extern const Color BACKGROUND;
 	extern const Color GRID;
 	extern const Color MOUSE_POINT;

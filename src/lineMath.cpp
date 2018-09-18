@@ -26,10 +26,10 @@ bool onSegment(WorldPoint const& p, WorldPoint const& q, WorldPoint const& r)
 int orientation(WorldPoint const& p, WorldPoint const& q, WorldPoint const& r) {
     // See https://www.geeksforgeeks.org/orientation-3-ordered-points/
     // for details of below formula.
-    int val = (q.y - p.y) * (r.x - q.x) -
-              (q.x - p.x) * (r.y - q.y);
+    double val = ((double)q.y - (double)p.y) * ((double)r.x - (double)q.x) -
+				((double)q.x - (double)p.x) * ((double)r.y - (double)q.y);
 
-    if (val == 0) return 0;  // colinear
+    if (abs(val) < 0.01) return 0;  // colinear
 
     return (val > 0)? +1: -1; // clock or counterclock wise
 }
@@ -44,18 +44,20 @@ int clockwiseness(const WorldPoint* points, unsigned n) {
 }
 
 double vectorAngle(WorldPoint const& origin, WorldPoint const& A, WorldPoint const& B) {
-	WorldPoint v1{A.x - origin.x, A.y - origin.y};
-	WorldPoint v2{B.x - origin.x, B.y - origin.y};
+	double v1x = (double)A.x - origin.x;
+	double v1y = (double)A.y - origin.y;
+	double v2x = (double)B.x - origin.x;
+	double v2y = (double)B.y - origin.y;
 	// normalize vectors
-	float v1l_inv = 1.f / sqrt(v1.x*v1.x + v1.y*v1.y);
-	v1.x *= v1l_inv; v1.y *= v1l_inv;
-	float v2l_inv = 1.f / sqrt(v2.x*v2.x + v2.y*v2.y);
-	v2.x *= v2l_inv; v2.y *= v2l_inv;
-	double angle = acos(v1.x*v2.x + v1.y*v2.y);	// this is the small angle
+	double v1l_inv = 1.f / sqrt(v1x*v1x + v1y*v1y);
+	v1x *= v1l_inv; v1y *= v1l_inv;
+	float v2l_inv = 1.f / sqrt(v2x*v2x + v2y*v2y);
+	v2x *= v2l_inv; v2y *= v2l_inv;
+	double angle = acos(v1x*v2x + v1y*v2y);	// this is the small angle
 	return angle;
 }
 
-bool segmentIntersect(WorldPoint const& p1a, WorldPoint const& p1b, WorldPoint const& p2a, WorldPoint const& p2b) {
+IntersectionResult segmentIntersect(WorldPoint const& p1a, WorldPoint const& p1b, WorldPoint const& p2a, WorldPoint const& p2b) {
     // Find the four orientations needed for general and
     // special cases
     int o1 = orientation(p1a, p1b, p2a);
@@ -65,22 +67,42 @@ bool segmentIntersect(WorldPoint const& p1a, WorldPoint const& p1b, WorldPoint c
 
     // General case
     if (o1 != o2 && o3 != o4)
-        return true;
+        return INTERSECT_MIDDLE;
 
     // Special Cases
     // p1a, p1b and p2a are colinear and p2a lies on segment p1q1
-    if (o1 == 0 && onSegment(p1a, p2a, p1b)) return true;
+    if (o1 == 0 && onSegment(p1a, p2a, p1b)) {
+		if (onSegment(p1a, p2b, p1b) || onSegment(p2a, p1b, p2b) || onSegment(p2a, p1a, p2b))
+			return INTERSECT_OVERLAP;
+		else
+			return INTERSECT_POINT;
+	}
 
     // p1a, p1b and p2b are colinear and p2b lies on segment p1q1
-    if (o2 == 0 && onSegment(p1a, p2b, p1b)) return true;
+    if (o2 == 0 && onSegment(p1a, p2b, p1b)) {
+		if (onSegment(p1a, p2a, p1b) || onSegment(p2a, p1b, p2b) || onSegment(p2a, p1a, p2b))
+			return INTERSECT_OVERLAP;
+		else
+			return INTERSECT_POINT;
+	}
 
     // p2a, p2b and p1a are colinear and p1a lies on segment p2q2
-    if (o3 == 0 && onSegment(p2a, p1a, p2b)) return true;
+    if (o3 == 0 && onSegment(p2a, p1a, p2b)) {
+		if (onSegment(p2a, p1b, p2b) || onSegment(p1a, p2a, p1b) || onSegment(p1a, p2b, p1b))
+			return INTERSECT_OVERLAP;
+		else
+			return INTERSECT_POINT;
+	}
 
      // p2a, p2b and p1b are colinear and p1b lies on segment p2q2
-    if (o4 == 0 && onSegment(p2a, p1b, p2b)) return true;
+    if (o4 == 0 && onSegment(p2a, p1b, p2b)) {
+		if (onSegment(p2a, p1a, p2b) || onSegment(p1a, p2a, p1b) || onSegment(p1a, p2b, p1b))
+			return INTERSECT_OVERLAP;
+		else
+			return INTERSECT_POINT;
+	}
 
-    return false; // Doesn't fall in any of the above cases
+    return INTERSECT_NONE; // Doesn't fall in any of the above cases
 }
 
 // this is ugly as hell, but does the job

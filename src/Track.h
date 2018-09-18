@@ -45,7 +45,7 @@ public:
 	// out_polyIndex: optional -> polygon index that was intersected will be stored in it
 	bool intersectLine(GridPoint const& p1, GridPoint const& p2, WorldPoint* out_point=nullptr, int *out_polyIndex=nullptr) const;
 	// returns true if the point is inside the closed polygon
-	bool pointInsidePolygon(WorldPoint const& p, int polyIndex, float* out_winding=nullptr) const;
+	bool pointInsidePolygon(WorldPoint const& p, int polyIndex) const;
 
 	Grid* grid() const { return grid_; }
 	WorldArea* worldArea() const { return worldArea_; }

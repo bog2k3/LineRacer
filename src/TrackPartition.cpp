@@ -10,8 +10,8 @@
  TrackPartition::TrackPartition(Track &track, int relativeCellSize)
  	: track_(track), relativeCellSize_(relativeCellSize)
 {
-	int rows = (track_.worldArea_->bottomRight().y - track_.worldArea_->topLeft().y) * track_.grid_->cellSize() / relativeCellSize;
-	int cols = (track_.worldArea_->bottomRight().x - track_.worldArea_->topLeft().x) * track_.grid_->cellSize() / relativeCellSize;
+	int rows = (track_.worldArea_->bottomRight().y - track_.worldArea_->topLeft().y) / relativeCellSize + 1;
+	int cols = (track_.worldArea_->bottomRight().x - track_.worldArea_->topLeft().x) / relativeCellSize + 1;
 	cells.assign(rows, row_type{});
 	for (auto &r : cells)
 		r.assign(cols, cell_type{});
