@@ -5,9 +5,9 @@
 #include <utility>
 
 struct Transform {
-	float scale = 1;	// real-to-virtual pixel ratio
-	float transX = 0;	// virtual pixel offset
-	float transY = 0;	// virtual pixel offset
+	float scale = 1;	// screen to world unit ratio
+	float transX = 0;	// world-space offset
+	float transY = 0;	// workd-space offset
 };
 
 struct ScreenPoint;

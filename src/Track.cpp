@@ -4,6 +4,7 @@
 #include "WorldArea.h"
 #include "color.h"
 #include "lineMath.h"
+#include "Painter.h"
 
 #include <SDL2/SDL_render.h>
 #include <cassert>
@@ -55,7 +56,8 @@ void Track::render(SDL_Renderer* r) {
 		for (auto &spos : startLine_.startPositions) {
 			auto p1 = grid_->gridToScreen(spos.position);
 			auto p2 = grid_->gridToScreen({spos.position.x + spos.direction.first, spos.position.y + spos.direction.second});
-			SDL_RenderDrawLine(r, p1.x, p1.y, p2.x, p2.y);
+			Painter::paintArrow(p1, p2, 10 * grid_->getTransform().scale, M_PI/6);
+			//SDL_RenderDrawLine(r, p1.x, p1.y, p2.x, p2.y);
 		}
 	}
 

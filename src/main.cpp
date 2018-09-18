@@ -5,6 +5,7 @@
 #include "Game.h"
 #include "Player.h"
 #include "HumanController.h"
+#include "Painter.h"
 #include "GUI/GUISystem.h"
 #include "GUI/Button.h"
 #include "color.h"
@@ -203,6 +204,7 @@ int main() {
 	SDL_UpdateWindowSurface( window );
 
 	auto renderer = SDL_CreateRenderer(window, -1, 0);
+	Painter::setRenderer(renderer);
 	Colors::BACKGROUND.set(renderer);
 	SDL_RenderClear(renderer);
 

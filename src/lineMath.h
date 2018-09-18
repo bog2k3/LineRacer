@@ -1,6 +1,8 @@
 #ifndef __LINE_MATH_H__
 #define __LINE_MATH_H__
 
+#include <cmath>
+
 struct WorldPoint;
 
 namespace lineMath {
@@ -27,6 +29,21 @@ WorldPoint intersectionPoint(WorldPoint const& p1a, WorldPoint const& p1b, World
 // Given three colinear points p, q, r, the function checks if
 // point q lies on line segment 'pr'
 bool onSegment(WorldPoint const& p, WorldPoint const& q, WorldPoint const& r);
+
+// returns the direction from (0,0) to point p, in radians, CCW direction
+template <class Point>
+float pointDirection(Point p) {
+	// normalize:
+	float _1_len = 1.f / sqrtf(p.x*p.x + p.y*p.y);
+	float x = p.x * _1_len;
+	float y = p.y * _1_len;
+	if (x >= 0)
+		return asinf(y);
+	else {
+		auto s = y >= 0 ? 1 : -1;
+		return -asinf(y) + M_PI*s;
+	}
+}
 
 } //namespace
 

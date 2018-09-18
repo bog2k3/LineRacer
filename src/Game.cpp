@@ -5,6 +5,7 @@
 #include "Player.h"
 #include "lineMath.h"
 #include "color.h"
+#include "Painter.h"
 
 #include <SDL2/SDL_render.h>
 
@@ -62,7 +63,8 @@ void Game::render(SDL_Renderer* r) {
 		for (auto &a : arrows_[i]) {
 			ScreenPoint p1 = track_->grid()->gridToScreen(a.from);
 			ScreenPoint p2 = track_->grid()->gridToScreen(a.to);
-			SDL_RenderDrawLine(r, p1.x, p1.y, p2.x, p2.y);
+			//SDL_RenderDrawLine(r, p1.x, p1.y, p2.x, p2.y);
+			Painter::paintArrow(p1, p2, 10 * track_->grid()->getTransform().scale, M_PI/6);
 		}
 	}
 }
