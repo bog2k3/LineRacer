@@ -16,6 +16,8 @@ void Painter::loadResources() {
 
 void Painter::paintArrow(ScreenPoint const& from, ScreenPoint const& to, int headSize, float headAperture) {
 	ScreenPoint dir {to.x - from.x, to.y - from.y};
+	if (dir.x == 0 && dir.y == 0)
+		return;
 	float angle = lineMath::pointDirection(dir) + M_PI;
 
 	// draw arrow body:

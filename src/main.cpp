@@ -13,6 +13,7 @@
 #include <SDL2/SDL.h>
 
 #include <iostream>
+#include <algorithm>
 
 const int windowW = 1280;
 const int windowH = 720;
@@ -46,11 +47,12 @@ void render(SDL_Renderer *renderer) {
 	// draw grid point closest to mouse:
 	if (!track.isInDesignMode()) {
 		ScreenPoint p = grid.gridToScreen(mousePoint);
+		int radius = std::max(1.f, 3 * tr.scale);
 		SDL_Rect rc {
-			p.x - 3, p.y - 3,
-			7, 7
+			p.x - radius, p.y - radius,
+			2*radius+1, 2*radius+1
 		};
-		Colors::GRID.set(renderer);
+		Colors::MOUSE_POINT.set(renderer);
 		SDL_RenderFillRect(renderer, &rc);
 	}
 

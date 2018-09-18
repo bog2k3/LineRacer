@@ -205,9 +205,11 @@ void Game::processPlayerSelection() {
 				track_->getStartPositions()[i].position.y + track_->getStartPositions()[i].direction.second };
 			if (nextPoint == arrowTip) {
 				// player chose position i
-				arrows_[currentPlayer_].push_back(Arrow::fromPointAndDir(track_->getStartPositions()[i].position,
+				Arrow a = Arrow::fromPointAndDir(track_->getStartPositions()[i].position,
 					track_->getStartPositions()[i].direction.first,
-					track_->getStartPositions()[i].direction.second));
+					track_->getStartPositions()[i].direction.second);
+				arrows_[currentPlayer_].push_back(a);
+				players_[currentPlayer_]->setLastArrow(a);
 				startPosTaken_[i] = true;
 				return;
 			}
@@ -215,17 +217,24 @@ void Game::processPlayerSelection() {
 		// if we got here, player's selection was none of the valid ones, kick him out
 		players_[currentPlayer_]->activateTurn(Player::TURN_FINISHED);
 		break;
-	case STATE_PLAYING:
-		arrows_[currentPlayer_].push_back({arrows_[currentPlayer_].back().to, nextPoint});
+	case STATE_PLAYING: {
+		Arrow a = {arrows_[currentPlayer_].back().to, nextPoint};
+		arrows_[currentPlayer_].push_back(a);
+		players_[currentPlayer_]->setLastArrow(a);
 		// check if player went off the track
-		// ....
-		break;
+		if (!track_->pointInsidePolygon(track_->grid()->gridToWorld(nextPoint), 0)
+			|| track_->pointInsidePolygon(track_->grid()->gridToWorld(nextPoint), 1)) {
+				// player is off track, set his speed to zero
+				arrows_[currentPlayer_].push_back({nextPoint, nextPoint});
+				players_[currentPlayer_]->setLastArrow(arrows_[currentPlayer_].back());
+			}
+	} break;
 	default:
 		throw std::runtime_error("what are you trying to do?");
 	}
 }
 
-bool Game::pathIsFree(Arrow const& a) {
+bool Game::pathIsFree(Arrow const& a) const {
 	WorldPoint p1 = track_->grid()->gridToWorld(a.from);
 	WorldPoint p2 = track_->grid()->gridToWorld(a.to);
 	for (unsigned i=0; i<players_.size(); i++) {
@@ -240,4 +249,9 @@ bool Game::pathIsFree(Arrow const& a) {
 			return false;
 	}
 	return true;
+}
+
+bool Game::isPointOnTrack(GridPoint const& p) const {
+	WorldPoint wp = track_->grid()->gridToWorld(p);
+	return track_->pointInsidePolygon(wp, 0) && !track_->pointInsidePolygon(wp, 1);
 }

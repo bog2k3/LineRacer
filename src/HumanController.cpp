@@ -4,6 +4,7 @@
 #include "Grid.h"
 #include "color.h"
 #include "transform.h"
+#include "Painter.h"
 
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_rect.h>
@@ -65,21 +66,30 @@ void HumanController::render(SDL_Renderer* r) {
 		|| !game_.activePlayer()->isTurnActive())
 		return;
 
-	// render the valid moves
+	// render the possible moves
 	auto moves = game_.activePlayer()->validMoves();
 	for (auto &m : moves) {
-		ScreenPoint from = grid_.gridToScreen(m.from);
+		if (game_.isPointOnTrack(m.to))
+			Colors::VALID_MOVE.set(r);
+		else
+			Colors::OUT_TRACK_MOVE.set(r);
 		ScreenPoint to = grid_.gridToScreen(m.to);
-		const int POINT_RADIUS = 2;
+		const int POINT_RADIUS = std::max(1.f, 3 * grid_.getTransform().scale);
 		SDL_Rect rc{to.x - POINT_RADIUS, to.y - POINT_RADIUS, 2*POINT_RADIUS+1, 2*POINT_RADIUS+1};
 		if (hasSelectedPoint_ && selectedPoint_ == m.to)
-			Colors::VALID_MOVE_SELECTED.set(r);
+			SDL_RenderFillRect(r, &rc);
 		else
-			Colors::VALID_MOVE.set(r);
-		SDL_RenderDrawRect(r, &rc);
+			SDL_RenderDrawRect(r, &rc);
 	}
-	// if no point selected yet, draw the previous vector, else draw the new vector to the selected point
-
+	if (game_.state() == Game::STATE_PLAYING) {
+		// if no point selected yet, draw the previous vector, else draw the new vector to the selected point
+		Arrow lastArrow = game_.activePlayer()->lastArrow();
+		ScreenPoint from = grid_.gridToScreen(lastArrow.to);
+		ScreenPoint to = hasSelectedPoint_ ? grid_.gridToScreen(selectedPoint_)
+			: grid_.gridToScreen({lastArrow.to.x + lastArrow.direction().first, lastArrow.to.y + lastArrow.direction().second});
+		Colors::UNCONFIRMED_ARROW.set(r);
+		Painter::paintArrow(from, to, 10 * grid_.getTransform().scale, M_PI/6);
+	}
 }
 
 void HumanController::nextTurn() {

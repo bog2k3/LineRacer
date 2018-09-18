@@ -30,6 +30,7 @@ public:
 	void endTurn();	// clears the pending action and cancels waiting for the action, also takes control away from the player
 	void activateTurn(TurnType type);	// called when the player's turn begins and he gets control to do his action
 	void setAllowedVectors(std::vector<Arrow> vectors);
+	void setLastArrow(Arrow arrow) { lastArrow_ = arrow; }
 	void selectNextPoint(GridPoint point) { selectedPoint_ = point; }
 	void confirmNextPoint();
 
@@ -37,6 +38,7 @@ public:
 	bool isTurnActive() const { return turn_ != TURN_INACTIVE && turn_ != TURN_FINISHED; }
 	bool isFinished() const { return turn_ == TURN_FINISHED; }
 	std::vector<Arrow> validMoves() const { return allowedVectors_; }
+	Arrow lastArrow() const { return lastArrow_; }
 
 private:
 	PlayerType type_;
@@ -45,6 +47,7 @@ private:
 	bool hasAction_ = false;
 	GridPoint selectedPoint_;
 	std::vector<Arrow> allowedVectors_;
+	Arrow lastArrow_;
 };
 
 #endif //__PLAYER_H__
