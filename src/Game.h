@@ -44,6 +44,7 @@ private:
 	float turnTimeLimit_;
 	std::vector<Player*> players_;
 	std::vector<std::vector<Arrow>> arrows_;
+	std::vector<bool> playerOffTrack_;
 	std::vector<bool> startPosTaken_;
 	GameState state_ = STATE_WAITING_PLAYERS;
 	int currentPlayer_ = 0;

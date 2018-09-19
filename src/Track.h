@@ -44,6 +44,8 @@ public:
 	// out_point: optional parameter -> intersection point will be stored in it
 	// out_polyIndex: optional -> polygon index that was intersected will be stored in it
 	bool intersectLine(GridPoint const& p1, GridPoint const& p2, WorldPoint* out_point=nullptr, int *out_polyIndex=nullptr) const;
+	// returns the number of points in which the arrow intersects the track polygons
+	unsigned intersectionsCount(GridPoint const& p1, GridPoint const& p2) const;
 	// returns true if the point is inside the closed polygon
 	bool pointInsidePolygon(WorldPoint const& p, int polyIndex) const;
 

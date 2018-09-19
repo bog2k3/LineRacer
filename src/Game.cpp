@@ -76,6 +76,7 @@ bool Game::addPlayer(Player* player) {
 		player->setColor(players_.size());
 		players_.push_back(player);
 		arrows_.push_back({});
+		playerOffTrack_.push_back(false);
 		return true;
 	} else
 		return false;
@@ -95,6 +96,7 @@ void Game::reset() {
 		stop();
 	players_.clear();
 	arrows_.clear();
+	playerOffTrack_.clear();
 	startPosTaken_.clear();
 	currentPlayer_ = 0;
 	turnTimer_ = 0;
@@ -160,7 +162,8 @@ std::vector<Arrow> Game::getPlayerVectors() {
 		for (int i=-1; i<=1; i++)
 			for (int j=-1; j<=1; j++) {
 				Arrow a {center.from, {center.to.x + j, center.to.y + i}};
-				if (a.length() <= 6 && pathIsFree(a))
+				int maxLength = playerOffTrack_[currentPlayer_] ? 1 : 6;
+				if (a.length() <= maxLength && pathIsFree(a))
 					ret.push_back(a);
 			}
 	} else
@@ -226,9 +229,15 @@ void Game::processPlayerSelection() {
 		// check if player went off the track
 		if (!track_->pointInsidePolygon(track_->grid()->gridToWorld(nextPoint), 0)
 			|| track_->pointInsidePolygon(track_->grid()->gridToWorld(nextPoint), 1)) {
-				// player is off track, set his speed to zero
-				arrows_[currentPlayer_].push_back({nextPoint, nextPoint});
-				players_[currentPlayer_]->setLastArrow(arrows_[currentPlayer_].back());
+				if (!playerOffTrack_[currentPlayer_]) {
+					// player is off track, set his speed to zero
+					playerOffTrack_[currentPlayer_] = true;
+					arrows_[currentPlayer_].push_back({nextPoint, nextPoint});
+					players_[currentPlayer_]->setLastArrow(arrows_[currentPlayer_].back());
+				}
+			} else if (playerOffTrack_[currentPlayer_]) {
+				// player went back on track
+				playerOffTrack_[currentPlayer_] = false;
 			}
 	} break;
 	default:
@@ -248,6 +257,8 @@ bool Game::pathIsFree(Arrow const& a) const {
 			return false;
 		WorldPoint q = track_->grid()->gridToWorld(arrows_[i].back().to);
 		if (lineMath::onSegment(p1, q, p2))
+			return false;
+		if (track_->intersectionsCount(a.from, a.to) > 1) // if the arrow intersects the track in more than one place, disallow it
 			return false;
 	}
 	return true;

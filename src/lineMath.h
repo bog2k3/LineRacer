@@ -8,7 +8,7 @@ struct WorldPoint;
 namespace lineMath {
 
 enum IntersectionResult {
-	INTERSECT_NONE,		// segments don't intersect
+	INTERSECT_NONE = 0,	// segments don't intersect
 	INTERSECT_MIDDLE,	// segments intersect somewhere in the middle
 	INTERSECT_ENDPOINT1, // first segment's first endpoint lies on the other segment
 	INTERSECT_ENDPOINT2, // first segment's second endpoint lies on the other segment

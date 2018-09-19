@@ -309,13 +309,13 @@ bool Track::intersectLine(WorldPoint const& p1, WorldPoint const& p2, bool skipL
 	for (auto &v : vertices) {
 		int polyIdx = v.first;
 		int vIdx = v.second;
-		if (skipLastSegment && polyIdx == currentPolyIdx_ && (unsigned)vIdx+1 == polyVertex_[currentPolyIdx_].size())
+		/*if (skipLastSegment && polyIdx == currentPolyIdx_ && (unsigned)vIdx+1 == polyVertex_[currentPolyIdx_].size())
 			continue; // we're not checking against last segment because that one is connected
 		if (vIdx > 0) {
 			// check line before vertex
 			if (lineMath::segmentIntersect(p1, p2, polyVertex_[polyIdx][vIdx-1], polyVertex_[polyIdx][vIdx]))
 				return true;
-		}
+		}*/
 		if (skipLastSegment && polyIdx == currentPolyIdx_ && (unsigned)vIdx+2 == polyVertex_[currentPolyIdx_].size())
 			continue; // we're not checking against last segment because that one is connected
 		if ((unsigned)vIdx + 1 < polyVertex_[polyIdx].size()) {
@@ -334,6 +334,40 @@ bool Track::intersectLine(WorldPoint const& p1, WorldPoint const& p2, bool skipL
 
 bool Track::intersectLine(GridPoint const& p1, GridPoint const& p2, WorldPoint* out_point, int *out_polyIndex) const {
 	return intersectLine(grid_->gridToWorld(p1), grid_->gridToWorld(p2), false, out_point, out_polyIndex);
+}
+
+unsigned Track::intersectionsCount(GridPoint const& p1, GridPoint const& p2) const {
+	WorldPoint wp1 = grid_->gridToWorld(p1);
+	WorldPoint wp2 = grid_->gridToWorld(p2);
+	WorldPoint topLeft {std::min(wp1.x, wp2.x), std::min(wp1.y, wp2.y)};
+	WorldPoint bottomRight {std::max(wp1.x, wp2.x), std::max(wp1.y, wp2.y)};
+	auto vertices = partition_.getVerticesInArea(topLeft, bottomRight);
+	unsigned count = 0;
+	for (auto &v : vertices) {
+		int polyIdx = v.first;
+		int vIdx = v.second;
+		if ((unsigned)vIdx+1 == polyVertex_[polyIdx].size())
+			continue;	// this was the last vertex, we skip it
+		// we check forward, from this vertex to the next
+		const WorldPoint &v1 = polyVertex_[polyIdx][vIdx];
+		const WorldPoint &v2 = polyVertex_[polyIdx][vIdx+1];
+		lineMath::IntersectionResult res = lineMath::segmentIntersect(v1, v2, wp1, wp2);
+		if (res == lineMath::INTERSECT_NONE || res == lineMath::INTERSECT_OVERLAP)
+			continue;
+		bool consider = false;
+		if (res == lineMath::INTERSECT_MIDDLE)
+			consider = true;
+		else if (res == lineMath::INTERSECT_ENDPOINT1)
+			// v1 is on wp1->wp2 we count it only if the line is going downward
+			consider = v2.y > v1.y;
+		else if (res == lineMath::INTERSECT_ENDPOINT2)
+			// v2 is on wp1->wp2, we count it only if the line is going upward
+			consider = v2.y < v1.y;
+
+		if (consider)
+			count++;
+	}
+	return count;
 }
 
 bool Track::pointInsidePolygon(WorldPoint const& p, int polyIndex) const {
