@@ -6,11 +6,14 @@
 struct WorldPoint;
 
 namespace lineMath {
-	
+
 enum IntersectionResult {
 	INTERSECT_NONE,		// segments don't intersect
 	INTERSECT_MIDDLE,	// segments intersect somewhere in the middle
-	INTERSECT_POINT,	// one of the segments' end lies on the other segment
+	INTERSECT_ENDPOINT1, // first segment's first endpoint lies on the other segment
+	INTERSECT_ENDPOINT2, // first segment's second endpoint lies on the other segment
+	INTERSECT_ENDPOINT3, // second segment's first endpoint lies on the other segment
+	INTERSECT_ENDPOINT4, // second segment's second endpoint lies on the other segment
 	INTERSECT_OVERLAP	// the segments overlap in many points
 };
 

@@ -61,7 +61,7 @@ void Track::render(SDL_Renderer* r) {
 		}
 	}
 
-#if 1 || DEBUG_CODE_TO_TEST_POINT_INSIDE_POLYGON
+#if 0 || DEBUG_CODE_TO_TEST_POINT_INSIDE_POLYGON
 	static std::vector<std::pair<WorldPoint, bool>> debugPoints;
 	static int sx = 0;
 	static int sy = 0;
@@ -340,12 +340,13 @@ bool Track::pointInsidePolygon(WorldPoint const& p, int polyIndex) const {
 	assert(polyIndex >= 0 && polyIndex <= 1);
 	if (polyVertex_[polyIndex].size() < 3)
 		return false;
+	int polyOrientation = lineMath::clockwiseness(polyVertex_[polyIndex].data(), polyVertex_[polyIndex].size()-1) > 0 ? +1 : -1;
 	// draw an imaginary horizontal line from the left limit of worldArea through point p
 	// then see how many edges from the test polygon it intersects
 	// odd means point is inside, even means it's outside
 	WorldPoint start {grid_->gridToWorld(worldArea_->topLeft()).x-1, p.y};
 	auto verts = partition_.getVerticesInArea({start.x, p.y-1}, {p.x+1, p.y + 1});
-	int count = 0;
+	int wn = 0;
 	for (auto &v : verts) {
 		if (v.first != polyIndex)
 			continue;
@@ -355,10 +356,24 @@ bool Track::pointInsidePolygon(WorldPoint const& p, int polyIndex) const {
 			const WorldPoint &v2 = polyVertex_[polyIndex][v.second];
 			if (v1.x >= p.x && v2.x >= p.x)
 				continue;
-			//if (v1.y == p.y || ((v1.y < p.y) != (v2.y < p.y)))
-			if (lineMath::segmentIntersect(v1, v2, start, p) == lineMath::INTERSECT_MIDDLE)
-				count++;
+			lineMath::IntersectionResult res = lineMath::segmentIntersect(v1, v2, start, p);
+			if (res == lineMath::INTERSECT_NONE || res == lineMath::INTERSECT_OVERLAP)
+				continue;
+			bool count = false;
+			if (res == lineMath::INTERSECT_MIDDLE)
+				count = true;
+			else if (res == lineMath::INTERSECT_ENDPOINT1)
+				// v1 is on the horizontal line, we count it only if the line is going downward
+				count = v2.y > v1.y;
+			else if (res == lineMath::INTERSECT_ENDPOINT2)
+				// v2 is on the horizontal line, we count it only if the line is going upward
+				count = v2.y < v1.y;
+
+			if (!count)
+				continue;
+			int side = lineMath::orientation(v1, v2, p);
+			wn += side == polyOrientation ? +1 : -1;
 		}
 	}
-	return (count % 2) != 0;
+	return wn != 0;
 }

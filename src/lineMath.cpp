@@ -11,6 +11,8 @@ namespace lineMath {
 // point q lies on line segment 'pr'
 bool onSegment(WorldPoint const& p, WorldPoint const& q, WorldPoint const& r)
 {
+	if (orientation(p, q, r) != 0)
+		return false;
     if (q.x <= std::max(p.x, r.x) && q.x >= std::min(p.x, r.x) &&
         q.y <= std::max(p.y, r.y) && q.y >= std::min(p.y, r.y))
        return true;
@@ -29,9 +31,9 @@ int orientation(WorldPoint const& p, WorldPoint const& q, WorldPoint const& r) {
     double val = ((double)q.y - (double)p.y) * ((double)r.x - (double)q.x) -
 				((double)q.x - (double)p.x) * ((double)r.y - (double)q.y);
 
-    if (abs(val) < 0.01) return 0;  // colinear
+    if (abs(val) < 0.000001) return 0;  // colinear
 
-    return (val > 0)? +1: -1; // clock or counterclock wise
+    return val > 0 ? +1 : -1; // clock or counterclock wise
 }
 
 int clockwiseness(const WorldPoint* points, unsigned n) {
@@ -66,40 +68,40 @@ IntersectionResult segmentIntersect(WorldPoint const& p1a, WorldPoint const& p1b
     int o4 = orientation(p2a, p2b, p1b);
 
     // General case
-    if (o1 != o2 && o3 != o4)
+    if (o1 != o2 && o3 != o4 && o1*o2*o3*o4 != 0)
         return INTERSECT_MIDDLE;
 
     // Special Cases
     // p1a, p1b and p2a are colinear and p2a lies on segment p1q1
     if (o1 == 0 && onSegment(p1a, p2a, p1b)) {
-		if (onSegment(p1a, p2b, p1b) || onSegment(p2a, p1b, p2b) || onSegment(p2a, p1a, p2b))
+		if (onSegment(p2a, p1a, p2b) || onSegment(p2a, p1b, p2b) || onSegment(p1a, p2b, p1b))
 			return INTERSECT_OVERLAP;
 		else
-			return INTERSECT_POINT;
+			return INTERSECT_ENDPOINT3;
 	}
 
     // p1a, p1b and p2b are colinear and p2b lies on segment p1q1
     if (o2 == 0 && onSegment(p1a, p2b, p1b)) {
-		if (onSegment(p1a, p2a, p1b) || onSegment(p2a, p1b, p2b) || onSegment(p2a, p1a, p2b))
+		if (onSegment(p2a, p1a, p2b) || onSegment(p2a, p1b, p2b) || onSegment(p1a, p2a, p1b))
 			return INTERSECT_OVERLAP;
 		else
-			return INTERSECT_POINT;
+			return INTERSECT_ENDPOINT4;
 	}
 
     // p2a, p2b and p1a are colinear and p1a lies on segment p2q2
     if (o3 == 0 && onSegment(p2a, p1a, p2b)) {
-		if (onSegment(p2a, p1b, p2b) || onSegment(p1a, p2a, p1b) || onSegment(p1a, p2b, p1b))
+		if ( onSegment(p1a, p2a, p1b) || onSegment(p1a, p2b, p1b) || onSegment(p2a, p1b, p2b))
 			return INTERSECT_OVERLAP;
 		else
-			return INTERSECT_POINT;
+			return INTERSECT_ENDPOINT1;
 	}
 
      // p2a, p2b and p1b are colinear and p1b lies on segment p2q2
     if (o4 == 0 && onSegment(p2a, p1b, p2b)) {
-		if (onSegment(p2a, p1a, p2b) || onSegment(p1a, p2a, p1b) || onSegment(p1a, p2b, p1b))
+		if (onSegment(p1a, p2a, p1b) || onSegment(p1a, p2b, p1b) || onSegment(p2a, p1a, p2b))
 			return INTERSECT_OVERLAP;
 		else
-			return INTERSECT_POINT;
+			return INTERSECT_ENDPOINT2;
 	}
 
     return INTERSECT_NONE; // Doesn't fall in any of the above cases
