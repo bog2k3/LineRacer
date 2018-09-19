@@ -37,14 +37,15 @@ void HumanController::onPointerTouch(bool pressed) {
 
 	if (pressed) {
 		selectedPoint_ = hoverPoint_;
-		hasSelectedPoint_ = true;
 	} else {
 		// touch released
-		if (game_.activePlayer()->actionPoint() == selectedPoint_) {
+		if (hasSelectedPoint_ && game_.activePlayer()->actionPoint() == selectedPoint_) {
 			// this is a confirmation
 			game_.activePlayer()->confirmNextPoint();
-		} else
+		} else {
 			game_.activePlayer()->selectNextPoint(selectedPoint_);
+			hasSelectedPoint_ = true;
+		}
 	}
 }
 
