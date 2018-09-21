@@ -120,6 +120,18 @@ void Track::render(SDL_Renderer* r) {
 			SDL_RenderFillRect(r, &rc);
 		}
 #endif
+
+#if 0 || DEBUG_CODE_TO_TEST_PARTITION_DENSITY
+	auto verts = partition_.getVerticesInArea(floatingVertex_, floatingVertex_);
+	Colors::RED.set(r);
+	for (auto &v : verts) {
+		if (v.second + 1 < polyVertex_[v.first].size()) {
+			ScreenPoint p1 = polyVertex_[v.first][v.second].toScreen(grid_->getTransform());
+			ScreenPoint p2 = polyVertex_[v.first][v.second+1].toScreen(grid_->getTransform());
+			SDL_RenderDrawLine(r, p1.x, p1.y, p2.x, p2.y);
+		}
+	}
+#endif
 }
 
 void Track::reset() {

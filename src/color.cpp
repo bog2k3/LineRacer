@@ -12,11 +12,11 @@ void Color::set(SDL_Renderer* rend) const {
 
 namespace Colors {
 	const Color RED {255, 0, 0};
-	const Color RED_TR {255, 0, 0, 128};
+	const Color RED_TR {255, 0, 0, 64};
 	const Color GREEN {0, 255, 0};
-	const Color GREEN_TR {0, 255, 0, 128};
+	const Color GREEN_TR {0, 255, 0, 64};
 	const Color BLUE {0, 0, 255};
-	const Color BLUE_TR {0, 0, 255, 128};
+	const Color BLUE_TR {0, 0, 255, 64};
 
 	const Color BACKGROUND {0xFF, 0xF0, 0xE6};
 	const Color GRID {190, 210, 255};

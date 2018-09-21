@@ -79,8 +79,8 @@ std::set<std::pair<int, int>> TrackPartition::getVerticesInArea(WorldPoint topLe
 	int row1 = coord1.first;
 	int col1 = coord1.second;
 	auto coord2 = worldToCell(bottomRight);
-	int row2 = std::min((int)cells.size()-1, coord2.first + 1);
-	int col2 = std::min((int)cells[0].size()-1, coord2.second + 1);
+	int row2 = std::min((int)cells.size()-1, coord2.first);
+	int col2 = std::min((int)cells[0].size()-1, coord2.second);
 
 	std::set<std::pair<int, int>> ret;
 	for (int i=row1; i<=row2; i++)
