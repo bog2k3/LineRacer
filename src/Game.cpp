@@ -76,7 +76,8 @@ bool Game::addPlayer(Player* player) {
 		player->setColor(players_.size());
 		players_.push_back(player);
 		arrows_.push_back({});
-		playerOffTrack_.push_back(false);
+		playerOffTrack_.push_back({false, {-1, -1}});
+		player->setOffTrackData({false, {-1, -1}});
 		return true;
 	} else
 		return false;
@@ -162,7 +163,7 @@ std::vector<Arrow> Game::getPlayerVectors() {
 		for (int i=-1; i<=1; i++)
 			for (int j=-1; j<=1; j++) {
 				Arrow a {center.from, {center.to.x + j, center.to.y + i}};
-				int maxLength = playerOffTrack_[currentPlayer_] ? 1 : 6;
+				int maxLength = playerOffTrack_[currentPlayer_].first ? 1 : 6;
 				if (a.length() <= maxLength && pathIsFree(a))
 					ret.push_back(a);
 			}
@@ -229,15 +230,18 @@ void Game::processPlayerSelection() {
 		// check if player went off the track
 		if (!track_->pointInsidePolygon(track_->grid()->gridToWorld(nextPoint), 0)
 			|| track_->pointInsidePolygon(track_->grid()->gridToWorld(nextPoint), 1)) {
-				if (!playerOffTrack_[currentPlayer_]) {
+				if (!playerOffTrack_[currentPlayer_].first) {
 					// player is off track, set his speed to zero
-					playerOffTrack_[currentPlayer_] = true;
+					playerOffTrack_[currentPlayer_].first = true;
+					playerOffTrack_[currentPlayer_].second = track_->computeCrossingIndex(a.from, a.to);
+					players_[currentPlayer_]->setOffTrackData(playerOffTrack_[currentPlayer_]);
 					arrows_[currentPlayer_].push_back({nextPoint, nextPoint});
 					players_[currentPlayer_]->setLastArrow(arrows_[currentPlayer_].back());
 				}
-			} else if (playerOffTrack_[currentPlayer_]) {
+			} else if (playerOffTrack_[currentPlayer_].first) {
 				// player went back on track
-				playerOffTrack_[currentPlayer_] = false;
+				playerOffTrack_[currentPlayer_].first = false;
+				players_[currentPlayer_]->setOffTrackData({false, {-1, -1}});
 			}
 	} break;
 	default:

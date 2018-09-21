@@ -46,7 +46,7 @@ private:
 	float turnTimeLimit_;
 	std::vector<Player*> players_;
 	std::vector<std::vector<Arrow>> arrows_;
-	std::vector<bool> playerOffTrack_;
+	std::vector<std::pair<bool, std::pair<int, float>>> playerOffTrack_;	// first: if true, player is out; second - contour index & track crossing index: point on track where he exited
 	std::vector<bool> startPosTaken_;
 	GameState state_ = STATE_WAITING_PLAYERS;
 	int currentPlayer_ = 0;

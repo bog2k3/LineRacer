@@ -5,6 +5,7 @@
 #include "TrackPartition.h"
 
 #include <vector>
+#include <cassert>
 
 class Grid;
 class WorldArea;
@@ -48,6 +49,14 @@ public:
 	unsigned intersectionsCount(GridPoint const& p1, GridPoint const& p2) const;
 	// returns true if the point is inside the closed polygon
 	bool pointInsidePolygon(WorldPoint const& p, int polyIndex) const;
+	// crossing index indicates the point where the line [p1, p2] intersects a track contour;
+	// the integral part represents the segment index, and the decimal part represents the position on that segment
+	// first is contour index, second is the crossing index into that contour
+	std::pair<int, float> computeCrossingIndex(GridPoint const& p1, GridPoint const& p2);
+	// returns the length (in vertices) of the specified polygon (0: outer poly, 1: inner poly)
+	unsigned polyLength(unsigned index) const { assert(index <= 1); return polyVertex_[index].size(); }
+	// returns the [index] vertex from [poly] polygon
+	WorldPoint polyVertex(unsigned poly, unsigned index) const { assert(poly<=1 && index < polyVertex_[poly].size()); return polyVertex_[poly][index]; }
 
 	Grid* grid() const { return grid_; }
 	WorldArea* worldArea() const { return worldArea_; }

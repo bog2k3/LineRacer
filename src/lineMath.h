@@ -40,11 +40,19 @@ WorldPoint intersectionPoint(WorldPoint const& p1a, WorldPoint const& p1b, World
 // point q lies on line segment 'pr'
 bool onSegment(WorldPoint const& p, WorldPoint const& q, WorldPoint const& r);
 
+// returns the modulus (vectorial length) of a point: this is the distance from origin to the point
+template <class Point>
+float modulus(Point const& p) {
+	float x = p.x;
+	float y = p.y;
+	return sqrtf(x*x + y*y);
+}
+
 // returns the direction from (0,0) to point p, in radians, CCW direction
 template <class Point>
-float pointDirection(Point p) {
+float pointDirection(Point const& p) {
 	// normalize:
-	float _1_len = 1.f / sqrtf(p.x*p.x + p.y*p.y);
+	float _1_len = 1.f / modulus(p);
 	float x = p.x * _1_len;
 	float y = p.y * _1_len;
 	if (x >= 0)
@@ -53,6 +61,14 @@ float pointDirection(Point p) {
 		auto s = y >= 0 ? 1 : -1;
 		return -asinf(y) + M_PI*s;
 	}
+}
+
+// returns the distance between two points
+template <class Point>
+float distance(Point const& p1, Point const& p2) {
+	float dx = (float)p2.x - p1.x;
+	float dy = (float)p2.y - p1.y;
+	return sqrtf(dx*dx + dy*dy);
 }
 
 } //namespace

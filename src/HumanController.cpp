@@ -5,6 +5,8 @@
 #include "color.h"
 #include "transform.h"
 #include "Painter.h"
+#include "Track.h"
+#include "lineMath.h"
 
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_rect.h>
@@ -107,6 +109,35 @@ void HumanController::render(SDL_Renderer* r) {
 			: grid_.gridToScreen({lastArrow.to.x + lastArrow.direction().first, lastArrow.to.y + lastArrow.direction().second});
 		Colors::UNCONFIRMED_ARROW.set(r);
 		Painter::paintArrow(from, to, 10 * grid_.getTransform().scale, M_PI/6);
+	}
+	// if player is off-track, highlight the contour area where he can re-enter
+	if (game_.activePlayer()->offTrackData().first) {
+		int exitPolygon = game_.activePlayer()->offTrackData().second.first;
+		int exitSegIndex = floor(game_.activePlayer()->offTrackData().second.second);
+		float exitSegWeight = game_.activePlayer()->offTrackData().second.second - exitSegIndex;
+		float requiredNegativeDistance = grid_.cellSize() * 4;
+		float requiredPositiveDistance = grid_.cellSize() * 2;
+		// draw the positive contour:
+		float positiveDist = 0;
+		Colors::RED.set(r);
+		for (int i=0; positiveDist < requiredPositiveDistance && i < game_.track()->polyLength(exitPolygon); i++) {
+			float drawLength = 1.f;
+			if (i == 0) {
+				// this is the exit segment, we draw only a fraction of it
+				drawLength -= exitSegWeight;
+			}
+			int i1 = (exitSegIndex + i) % game_.track()->polyLength(exitPolygon);
+			int i2 = (exitSegIndex + i + 1) % game_.track()->polyLength(exitPolygon);
+			WorldPoint wp1 = game_.track()->polyVertex(exitPolygon, i1);
+			WorldPoint wp2 = game_.track()->polyVertex(exitPolygon, i1);
+			positiveDist += lineMath::distance(wp1, wp2);
+			ScreenPoint sp1 = wp1.toScreen(game_.track()->grid()->getTransform());
+			ScreenPoint sp2 = wp2.toScreen(game_.track()->grid()->getTransform());
+			SDL_RenderDrawLine(r, sp1.x, sp1.y, sp2.x, sp2.y);
+		}
+		// draw the negative contour:
+		float negativeDist = 0;
+		for (int i=0; negativeDist < requiredNegativeDistance)
 	}
 }
 

@@ -425,3 +425,28 @@ bool Track::pointInsidePolygon(WorldPoint const& p, int polyIndex) const {
 	}
 	return wn != 0;
 }
+
+std::pair<int, float> Track::computeCrossingIndex(GridPoint const& p1, GridPoint const& p2) {
+	// TODO: this must take into account the polygon winding direction (CW or CCW) and the start-line direction as well
+	WorldPoint wp1 = grid_->gridToWorld(p1);
+	WorldPoint wp2 = grid_->gridToWorld(p2);
+	WorldPoint topLeft {std::min(wp1.x, wp2.x), std::min(wp1.y, wp2.y)};
+	WorldPoint bottomRight {std::max(wp1.x, wp2.x), std::max(wp1.y, wp2.y)};
+	auto verts = partition_.getVerticesInArea(topLeft, bottomRight);
+	for (auto &v : verts) {
+		int pIndex = v.first;
+		int vIndex = v.second;
+		if ((unsigned)vIndex + 1 == polyVertex_[pIndex].size())
+			continue;
+		WorldPoint &sp1 = polyVertex_[pIndex][vIndex];
+		WorldPoint &sp2 = polyVertex_[pIndex][vIndex + 1];
+		if (lineMath::segmentIntersect(sp1, sp2, wp1, wp2)) {
+			auto crossPoint = lineMath::intersectionPoint(sp1, sp2, wp1, wp2);
+			float segLength = lineMath::distance(sp1, sp2);
+			float crossLength = lineMath::distance(sp1, crossPoint);
+			assert(crossLength <= segLength);
+			return {pIndex, vIndex + crossLength / segLength};
+		}
+	}
+	return {-1, -1};
+}
