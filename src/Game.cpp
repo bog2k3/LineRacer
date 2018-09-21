@@ -256,11 +256,11 @@ bool Game::pathIsFree(Arrow const& a) const {
 		if (a.to == arrows_[i].back().to)	// arrow would end up on top of an occupied position
 			return false;
 		WorldPoint q = track_->grid()->gridToWorld(arrows_[i].back().to);
-		if (lineMath::onSegment(p1, q, p2))
-			return false;
-		if (track_->intersectionsCount(a.from, a.to) > 1) // if the arrow intersects the track in more than one place, disallow it
+		if (lineMath::onSegment(p1, q, p2))	// arrow would cross another player's position
 			return false;
 	}
+	if (track_->intersectionsCount(a.from, a.to) > 1) // if the arrow intersects the track in more than one place, disallow it
+		return false;
 	return true;
 }
 

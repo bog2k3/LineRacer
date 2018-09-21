@@ -374,6 +374,8 @@ bool Track::pointInsidePolygon(WorldPoint const& p, int polyIndex) const {
 	assert(polyIndex >= 0 && polyIndex <= 1);
 	if (polyVertex_[polyIndex].size() < 3)
 		return false;
+	if (!worldArea_->containsPoint(p))
+		return false;
 	int polyOrientation = lineMath::clockwiseness(polyVertex_[polyIndex].data(), polyVertex_[polyIndex].size()-1) > 0 ? +1 : -1;
 	// draw an imaginary horizontal line from the left limit of worldArea through point p
 	// then see how many edges from the test polygon it intersects

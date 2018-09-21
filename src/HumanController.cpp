@@ -9,6 +9,8 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_rect.h>
 
+#include <algorithm>
+
 HumanController::HumanController(Game& game, Grid& grid)
 	: game_(game), grid_(grid)
 {
@@ -16,7 +18,7 @@ HumanController::HumanController(Game& game, Grid& grid)
 
 void HumanController::onPointerMoved(GridPoint where) {
 	hoverPoint_ = where;
-	if (pointerDown_ && isPointValid(where)) {
+	if (pointerDown_ && isPointSelectable(where)) {
 		selectedPoint_ = hoverPoint_;
 		hasSelectedPoint_ = true;
 	}
@@ -32,14 +34,14 @@ void HumanController::onPointerTouch(bool pressed) {
 		|| !game_.activePlayer()->isTurnActive())
 		return;
 
-	if (!isPointValid(hoverPoint_))
+	if (!isPointSelectable(hoverPoint_))
 		return;
 
 	if (pressed) {
 		selectedPoint_ = hoverPoint_;
 	} else {
 		// touch released
-		if (hasSelectedPoint_ && game_.activePlayer()->actionPoint() == selectedPoint_) {
+		if (hasSelectedPoint_ && isValidMove(selectedPoint_) && game_.activePlayer()->actionPoint() == selectedPoint_) {
 			// this is a confirmation
 			game_.activePlayer()->confirmNextPoint();
 		} else {
@@ -49,7 +51,7 @@ void HumanController::onPointerTouch(bool pressed) {
 	}
 }
 
-bool HumanController::isPointValid(GridPoint const& p) {
+bool HumanController::isValidMove(GridPoint const& p) {
 	if (!game_.activePlayer()
 		|| game_.activePlayer()->type() != Player::TYPE_HUMAN
 		|| !game_.activePlayer()->isTurnActive())
@@ -61,6 +63,13 @@ bool HumanController::isPointValid(GridPoint const& p) {
 	return false;
 }
 
+bool HumanController::isPointSelectable(GridPoint const& p) {
+	for (int i=0; i<9; i++)
+		if (p == possibleMoves_[i].p)
+			return true;
+	return false;
+}
+
 void HumanController::render(SDL_Renderer* r) {
 	if (!game_.activePlayer()
 		|| game_.activePlayer()->type() != Player::TYPE_HUMAN
@@ -68,19 +77,27 @@ void HumanController::render(SDL_Renderer* r) {
 		return;
 
 	// render the possible moves
-	auto moves = game_.activePlayer()->validMoves();
-	for (auto &m : moves) {
-		if (game_.isPointOnTrack(m.to))
-			Colors::VALID_MOVE.set(r);
-		else
-			Colors::OUT_TRACK_MOVE.set(r);
-		ScreenPoint to = grid_.gridToScreen(m.to);
+	for (auto &m : possibleMoves_) {
+		if (m.isValid) {
+			if (m.isWithinTrack)
+				Colors::VALID_MOVE.set(r);
+			else
+				Colors::OUT_TRACK_MOVE.set(r);
+		} else
+			Colors::INVALID_MOVE.set(r);
+		ScreenPoint to = grid_.gridToScreen(m.p);
 		const int POINT_RADIUS = std::max(1.f, 3 * grid_.getTransform().scale);
-		SDL_Rect rc{to.x - POINT_RADIUS, to.y - POINT_RADIUS, 2*POINT_RADIUS+1, 2*POINT_RADIUS+1};
-		if (hasSelectedPoint_ && selectedPoint_ == m.to)
-			SDL_RenderFillRect(r, &rc);
-		else
-			SDL_RenderDrawRect(r, &rc);
+		if (m.isValid) {
+			SDL_Rect rc{to.x - POINT_RADIUS, to.y - POINT_RADIUS, 2*POINT_RADIUS+1, 2*POINT_RADIUS+1};
+			if (hasSelectedPoint_ && selectedPoint_ == m.p)
+				SDL_RenderFillRect(r, &rc);
+			else
+				SDL_RenderDrawRect(r, &rc);
+		} else {
+			// mark the invalid point with an X
+			SDL_RenderDrawLine(r, to.x - POINT_RADIUS, to.y - POINT_RADIUS, to.x + POINT_RADIUS, to.y + POINT_RADIUS);
+			SDL_RenderDrawLine(r, to.x - POINT_RADIUS, to.y + POINT_RADIUS, to.x + POINT_RADIUS, to.y - POINT_RADIUS);
+		}
 	}
 	if (game_.state() == Game::STATE_PLAYING) {
 		// if no point selected yet, draw the previous vector, else draw the new vector to the selected point
@@ -97,4 +114,25 @@ void HumanController::nextTurn() {
 	// reset stuff
 	pointerDown_ = false;
 	hasSelectedPoint_ = false;
+	// compute player's possible moves:
+	auto validMoves = game_.activePlayer()->validMoves();
+	possibleMoves_.clear();
+	if (game_.state() == Game::STATE_START_SELECTION) {
+		for (auto &a : validMoves)
+			possibleMoves_.push_back({ a.to, true, true });
+		return;
+	}
+	auto arrow = game_.activePlayer()->lastArrow();
+	GridPoint topLeft {arrow.to.x + arrow.direction().first - 1, arrow.to.y + arrow.direction().second - 1};
+	for (int i=0; i<9; i++) {
+		int x = topLeft.x + (i/3);
+		int y = topLeft.y + (i%3);
+		possiblePoint pt;
+		pt.p = {x, y};
+		pt.isValid = std::find_if(validMoves.begin(), validMoves.end(), [this, &pt] (auto &a) {
+			return a.to == pt.p;
+		}) != validMoves.end();
+		pt.isWithinTrack = game_.isPointOnTrack(pt.p);
+		possibleMoves_.push_back(pt);
+	}
 }

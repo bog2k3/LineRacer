@@ -3,6 +3,8 @@
 
 #include "transform.h"
 
+#include <vector>
+
 class Game;
 class Grid;
 struct SDL_Renderer;
@@ -28,8 +30,17 @@ private:
 	GridPoint selectedPoint_;
 	GridPoint hoverPoint_;
 	bool hasSelectedPoint_ = false;
+	struct possiblePoint {
+		GridPoint p;
+		bool isWithinTrack = false;
+		bool isValid = false;
+	};
+	std::vector<possiblePoint> possibleMoves_;
 
-	bool isPointValid(GridPoint const& p);
+	// returns true if the selected point is a valid move for the current player
+	bool isValidMove(GridPoint const& p);
+	// returns true if the selected point is one of the 9 possible next positions for the current player, but not necesarily a valid move
+	bool isPointSelectable(GridPoint const& p);
 };
 
 #endif //__HUMAN_CONTROLLER_H__

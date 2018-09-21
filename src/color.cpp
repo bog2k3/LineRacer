@@ -17,7 +17,7 @@ namespace Colors {
 	const Color GREEN_TR {0, 255, 0, 128};
 	const Color BLUE {0, 0, 255};
 	const Color BLUE_TR {0, 0, 255, 128};
-	
+
 	const Color BACKGROUND {0xFF, 0xF0, 0xE6};
 	const Color GRID {190, 210, 255};
 	const Color MOUSE_POINT {128, 165, 255};
@@ -28,6 +28,7 @@ namespace Colors {
 
 	const Color OUT_TRACK_MOVE {210, 30, 0};
 	const Color VALID_MOVE {0, 210, 110};
+	const Color INVALID_MOVE {40, 40, 40, 150};
 
 	const Color UNCONFIRMED_ARROW {40, 40, 40, 95};
 	const Color PLAYER1 {0, 165, 235};

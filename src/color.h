@@ -20,7 +20,7 @@ namespace Colors {
 	extern const Color GREEN_TR;
 	extern const Color BLUE;
 	extern const Color BLUE_TR;
-	
+
 	extern const Color BACKGROUND;
 	extern const Color GRID;
 	extern const Color MOUSE_POINT;
@@ -31,6 +31,7 @@ namespace Colors {
 
 	extern const Color OUT_TRACK_MOVE;
 	extern const Color VALID_MOVE;
+	extern const Color INVALID_MOVE;
 
 	extern const Color UNCONFIRMED_ARROW;
 	extern const Color PLAYER1;

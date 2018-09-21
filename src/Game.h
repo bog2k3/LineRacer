@@ -36,6 +36,8 @@ public:
 	bool pathIsFree(Arrow const& a) const; // returns true if the arrow doesn't intersect any player's position
 	bool isPointOnTrack(GridPoint const& p) const; // returns true if the point is within the track limits
 
+	Track* track() const { return track_; }
+
 	Event<void(GameState)> onStateChange;
 	Event<void()> onTurnAdvance;
 
