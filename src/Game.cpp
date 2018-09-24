@@ -140,8 +140,7 @@ bool Game::checkWin() {
 			this is to avoid player cheating, exiting the track, going behind start-line and instantly winning when returning back and crossing it
 	*/
 	if (int cross = track_->checkStartLineCross(players_[currentPlayer_].arrows.back().from, players_[currentPlayer_].arrows.back().to, false)) {
-		for (unsigned i=0; i<players_[currentPlayer_].arrows.size() - 1; i++)
-			cross += track_->checkStartLineCross(players_[currentPlayer_].arrows[i].from, players_[currentPlayer_].arrows[i].to, true);
+		players_[currentPlayer_].laps += cross;
 	}
 	return false;
 }

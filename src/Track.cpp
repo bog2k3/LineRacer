@@ -457,5 +457,16 @@ int Track::polyDirection(unsigned polyIndex) const {
 }
 
 int Track::checkStartLineCross(GridPoint const& from, GridPoint const& to, bool extended) const {
-	return 0;
+	WorldPoint fw = grid_->gridToWorld(from);
+	WorldPoint tw = grid_->gridToWorld(to);
+	lineMath::IntersectionResult res;
+	if (extended)
+		res = lineMath::segmentIntersectLine(fw, tw, startLine_.p1, startLine_.p2);
+	else
+		res = lineMath::segmentIntersect(fw, tw, startLine_.p1, startLine_.p2);
+	if (res == lineMath::INTERSECT_NONE || lineMath::INTERSECT_OVERLAP)
+		return 0;
+	int dot = (to.x - from.x) * startLine_.startPositions[0].direction.first +
+			(to.y - from.y) * startLine_.startPositions[0].direction.second;
+	return dot > 0 ? +1 : -1;
 }

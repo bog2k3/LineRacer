@@ -107,6 +107,21 @@ IntersectionResult segmentIntersect(WorldPoint const& p1a, WorldPoint const& p1b
     return INTERSECT_NONE; // Doesn't fall in any of the above cases
 }
 
+IntersectionResult segmentIntersectLine(WorldPoint const& s1, WorldPoint const& s2, WorldPoint const& l1, WorldPoint const& l2) {
+	int o1 = orientation(l1, l2, s1);
+	int o2 = orientation(l1, l2, s2);
+
+	if (o1 == 0 && o2 == 0)
+		return INTERSECT_OVERLAP;
+	if (o1 == o2)
+		return INTERSECT_NONE;
+	if (o1 == 0)
+		return INTERSECT_ENDPOINT1;
+	if (o2 == 0)
+		return INTERSECT_ENDPOINT2;
+	return INTERSECT_MIDDLE;
+}
+
 // this is ugly as hell, but does the job
 WorldPoint intersectionPoint(WorldPoint const& p, WorldPoint const& p2, WorldPoint const& q, WorldPoint const& q2) {
 	auto cross = [](float ax, float ay, float bx, float by) { return ax * by - ay * bx; };
