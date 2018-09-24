@@ -53,6 +53,10 @@ public:
 	// the integral part represents the segment index, and the decimal part represents the position on that segment
 	// first is contour index, second is the crossing index into that contour
 	std::pair<int, float> computeCrossingIndex(GridPoint const& p1, GridPoint const& p2);
+	// returns the "forward" vertex direction for a given polygon with respect to the startLine's direction;
+	// if the startline points in the same direction as the polygon winding, will return +1, otherwise -1;
+	// returns 0 if the request is not valid in the current state
+	int polyDirection(unsigned polyIndex) const;
 	// returns the length (in vertices) of the specified polygon (0: outer poly, 1: inner poly)
 	unsigned polyLength(unsigned index) const { assert(index <= 1); return polyVertex_[index].size(); }
 	// returns the [index] vertex from [poly] polygon
@@ -78,11 +82,13 @@ private:
 		WorldPoint p1;
 		WorldPoint p2;
 		std::vector<StartPosition> startPositions;
+		int orientation;
 		bool isValid = false;
 	} startLine_;
 
 	// track consists of two closed polygons, one inner and one outer
 	std::vector<WorldPoint> polyVertex_[2];
+	int polyOrientation_[2];
 
 	bool checkCloseSnap();
 	bool validateVertex();

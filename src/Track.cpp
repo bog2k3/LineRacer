@@ -241,6 +241,11 @@ void Track::updateStartLine() {
 	startLine_.isValid = true;
 	startLine_.p1 = intersections[imin].p1;
 	startLine_.p2 = intersections[imin].p2;
+	// compute start line orientation:
+	WorldPoint &outer = intersections[imin].polyId == 0 ? startLine_.p1 : startLine_.p2;	// intersection point on outer polygon
+	WorldPoint &inner = intersections[imin].polyId == 0 ? startLine_.p2 : startLine_.p1;	// intersection point on inner polygon
+	startLine_.orientation = lineMath::orientation(inner, outer, floatingVertex_);
+	// compute valid starting arrows:
 	startLine_.startPositions.clear();
 	GridPoint p = grid_->worldToGrid(startLine_.p1);
 	for (int i=0; i<intersections[imin].steps; p.x+=directions[imin].first, p.y+=directions[imin].second, i++) {
@@ -298,6 +303,7 @@ void Track::pointerTouch(bool on, float x, float y) {
 			pushVertex();
 
 			if (closed) {
+				polyOrientation_[currentPolyIdx_] = lineMath::clockwiseness(polyVertex_[currentPolyIdx_].data(), polyVertex_[currentPolyIdx_].size()-1) > 0 ? +1 : -1;
 				if (currentPolyIdx_ == 0)
 					currentPolyIdx_++;
 				else
@@ -321,13 +327,6 @@ bool Track::intersectLine(WorldPoint const& p1, WorldPoint const& p2, bool skipL
 	for (auto &v : vertices) {
 		int polyIdx = v.first;
 		int vIdx = v.second;
-		/*if (skipLastSegment && polyIdx == currentPolyIdx_ && (unsigned)vIdx+1 == polyVertex_[currentPolyIdx_].size())
-			continue; // we're not checking against last segment because that one is connected
-		if (vIdx > 0) {
-			// check line before vertex
-			if (lineMath::segmentIntersect(p1, p2, polyVertex_[polyIdx][vIdx-1], polyVertex_[polyIdx][vIdx]))
-				return true;
-		}*/
 		if (skipLastSegment && polyIdx == currentPolyIdx_ && (unsigned)vIdx+2 == polyVertex_[currentPolyIdx_].size())
 			continue; // we're not checking against last segment because that one is connected
 		if ((unsigned)vIdx + 1 < polyVertex_[polyIdx].size()) {
@@ -388,7 +387,7 @@ bool Track::pointInsidePolygon(WorldPoint const& p, int polyIndex) const {
 		return false;
 	if (!worldArea_->containsPoint(p))
 		return false;
-	int polyOrientation = lineMath::clockwiseness(polyVertex_[polyIndex].data(), polyVertex_[polyIndex].size()-1) > 0 ? +1 : -1;
+	int polyOrientation = polyOrientation_[polyIndex];
 	// draw an imaginary horizontal line from the left limit of worldArea through point p
 	// then see how many edges from the test polygon it intersects
 	// odd means point is inside, even means it's outside
@@ -427,7 +426,6 @@ bool Track::pointInsidePolygon(WorldPoint const& p, int polyIndex) const {
 }
 
 std::pair<int, float> Track::computeCrossingIndex(GridPoint const& p1, GridPoint const& p2) {
-	// TODO: this must take into account the polygon winding direction (CW or CCW) and the start-line direction as well
 	WorldPoint wp1 = grid_->gridToWorld(p1);
 	WorldPoint wp2 = grid_->gridToWorld(p2);
 	WorldPoint topLeft {std::min(wp1.x, wp2.x), std::min(wp1.y, wp2.y)};
@@ -449,4 +447,11 @@ std::pair<int, float> Track::computeCrossingIndex(GridPoint const& p1, GridPoint
 		}
 	}
 	return {-1, -1};
+}
+
+int Track::polyDirection(unsigned polyIndex) const {
+	assert(polyIndex <= 1);
+	if (!startLine_.isValid)
+		return 0;
+	return polyOrientation_[polyIndex] == startLine_.orientation ? +1 : -1;
 }

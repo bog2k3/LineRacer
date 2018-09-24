@@ -111,47 +111,45 @@ void HumanController::render(SDL_Renderer* r) {
 		Painter::paintArrow(from, to, 10 * grid_.getTransform().scale, M_PI/6);
 	}
 	// if player is off-track, highlight the contour area where he can re-enter
+	// This must take into account the polygon winding direction (CW or CCW) and the start-line direction as well
 	if (game_.activePlayer()->offTrackData().first) {
 		int exitPolygon = game_.activePlayer()->offTrackData().second.first;
 		int exitSegIndex = floor(game_.activePlayer()->offTrackData().second.second);
 		float exitSegWeight = game_.activePlayer()->offTrackData().second.second - exitSegIndex;
-		float requiredNegativeDistance = grid_.cellSize() * 4;
-		float requiredPositiveDistance = grid_.cellSize() * 2;
-		// draw the positive contour:
-		float positiveDist = 0;
-		Colors::RED.set(r);
-		for (int i=0; positiveDist < requiredPositiveDistance && i < game_.track()->polyLength(exitPolygon); i++) {
-			float drawLength = 1.f;
-			if (i == 0) {
-				// this is the exit segment, we draw only a fraction of it
-				drawLength -= exitSegWeight;
+		float requiredRedDistance = grid_.cellSize() * 10;
+		float requiredGreenDistance = grid_.cellSize() * 7;
+		int reentryDirection = -game_.track()->polyDirection(exitPolygon); // reentry direction depends on polygon direction vs startLine direction
+
+		for (int sign = +1; sign >= -1; sign -= 2) {
+			bool greenPart = sign == reentryDirection;
+			float distance = 0;
+			float requiredDist = greenPart ? requiredGreenDistance : requiredRedDistance;
+			Color c = greenPart > 0 ? Colors::GREEN : Colors::RED;
+			for (int i=0; distance < requiredDist && i < game_.track()->polyLength(exitPolygon)/2; i++) {
+				c.a = 255 * (1.f - distance / requiredDist);
+				c.set(r);
+				float drawLength = 1.f;
+				if (i == 0) {
+					// this is the exit segment, we draw only a fraction of it
+					drawLength = sign > 0 ? 1.f - exitSegWeight : exitSegWeight;
+					// when drawLength > 0, we draw from 0.0 to drawLength
+					// when drawLength < 0, we draw from 1.0+drawLength to 1.0
+				}
+				int offs = sign < 0 ? 1 : 0;
+				int i1 = (exitSegIndex + game_.track()->polyLength(exitPolygon) + offs + i * sign) % game_.track()->polyLength(exitPolygon);
+				int i2 = (exitSegIndex + game_.track()->polyLength(exitPolygon) + offs + (i + 1)*sign) % game_.track()->polyLength(exitPolygon);
+				WorldPoint wp1 = game_.track()->polyVertex(exitPolygon, i1);
+				WorldPoint wp2 = game_.track()->polyVertex(exitPolygon, i2);
+				// adjust if drawing part of the segment:
+				if (drawLength != 1.f) {
+					wp1.x = wp2.x + (wp1.x-wp2.x) * drawLength;
+					wp1.y = wp2.y + (wp1.y-wp2.y) * drawLength;
+				}
+				distance += lineMath::distance(wp1, wp2);
+				ScreenPoint sp1 = wp1.toScreen(game_.track()->grid()->getTransform());
+				ScreenPoint sp2 = wp2.toScreen(game_.track()->grid()->getTransform());
+				SDL_RenderDrawLine(r, sp1.x, sp1.y, sp2.x, sp2.y);
 			}
-			int i1 = (exitSegIndex + i) % game_.track()->polyLength(exitPolygon);
-			int i2 = (exitSegIndex + i + 1) % game_.track()->polyLength(exitPolygon);
-			WorldPoint wp1 = game_.track()->polyVertex(exitPolygon, i1);
-			WorldPoint wp2 = game_.track()->polyVertex(exitPolygon, i2);
-			positiveDist += lineMath::distance(wp1, wp2);
-			ScreenPoint sp1 = wp1.toScreen(game_.track()->grid()->getTransform());
-			ScreenPoint sp2 = wp2.toScreen(game_.track()->grid()->getTransform());
-			SDL_RenderDrawLine(r, sp1.x, sp1.y, sp2.x, sp2.y);
-		}
-		// draw the negative contour:
-		float negativeDist = 0;
-		Colors::GREEN.set(r);
-		for (int i=0; negativeDist< requiredNegativeDistance && i < game_.track()->polyLength(exitPolygon); i++) {
-			float drawLength = 1.f;
-			if (i == 0) {
-				// this is the exit segment, we draw only a fraction of it
-				drawLength = exitSegWeight;
-			}
-			int i1 = (exitSegIndex + game_.track()->polyLength(exitPolygon) - i - 1) % game_.track()->polyLength(exitPolygon);
-			int i2 = (exitSegIndex + game_.track()->polyLength(exitPolygon) - i) % game_.track()->polyLength(exitPolygon);
-			WorldPoint wp1 = game_.track()->polyVertex(exitPolygon, i1);
-			WorldPoint wp2 = game_.track()->polyVertex(exitPolygon, i2);
-			negativeDist += lineMath::distance(wp1, wp2);
-			ScreenPoint sp1 = wp1.toScreen(game_.track()->grid()->getTransform());
-			ScreenPoint sp2 = wp2.toScreen(game_.track()->grid()->getTransform());
-			SDL_RenderDrawLine(r, sp1.x, sp1.y, sp2.x, sp2.y);
 		}
 	}
 }

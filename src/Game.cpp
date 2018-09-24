@@ -136,6 +136,13 @@ void Game::nextTurn() {
 }
 
 bool Game::checkWin() {
+	/*
+		count how many laps a player did
+		laps is initially 0
+		when player crosses the start-line SEGMENT, his laps is incremented/decremented depending on direction
+		when player is OUTSIDE of track and crosses the start-line INFINITE LINE, his laps is also incremented/decremented based on direction
+			this is to avoid player cheating, exiting the track, going behind start-line and instantly winning when returning back and crossing it
+	*/
 	return false;
 	// TODO...
 }
