@@ -171,8 +171,21 @@ std::vector<Arrow> Game::getPlayerVectors() {
 			for (int j=-1; j<=1; j++) {
 				Arrow a {center.from, {center.to.x + j, center.to.y + i}};
 				int maxLength = playerOffTrack_[currentPlayer_].first ? 1 : 6;
-				if (a.length() <= maxLength && pathIsFree(a))
-					ret.push_back(a);
+				if (a.length() > maxLength)
+					continue;
+				if (!pathIsFree(a))
+					continue;
+				if (playerOffTrack_[currentPlayer_].first) {
+					// player was off-track, must check if the current arrow would get him back on
+					// and if it does, only allow it if it re-enters the track behind his exit position
+					WorldPoint arrowTipW = track_->grid()->gridToWorld(a.to);
+					if (track_->pointInsidePolygon(arrowTipW, 0) && !track_->pointInsidePolygon(arrowTipW, 1)) {
+						auto crossIndex = track_->computeCrossingIndex(a.from, a.to);
+						if ((crossIndex.second - playerOffTrack_[currentPlayer_].second.second) * track_->polyDirection(crossIndex.first) > 0)
+							continue;
+					}
+				}
+				ret.push_back(a);
 			}
 	} else
 		throw std::runtime_error("Invalid state");
