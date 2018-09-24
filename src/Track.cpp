@@ -455,3 +455,7 @@ int Track::polyDirection(unsigned polyIndex) const {
 		return 0;
 	return polyOrientation_[polyIndex] == startLine_.orientation ? +1 : -1;
 }
+
+int Track::checkStartLineCross(GridPoint const& from, GridPoint const& to, bool extended) const {
+	return 0;
+}

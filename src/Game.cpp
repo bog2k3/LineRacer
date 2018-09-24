@@ -42,7 +42,7 @@ void Game::update(float dt) {
 	case STATE_START_SELECTION:
 	case STATE_PLAYING:
 		turnTimer_ += dt;
-		if (turnTimer_ >= turnTimeLimit_ || players_[currentPlayer_]->actionReady()) {
+		if (turnTimer_ >= turnTimeLimit_ || players_[currentPlayer_].player->actionReady()) {
 			// perform action for player, then move on to the next turn
 			processPlayerSelection();
 			nextTurn();
@@ -61,8 +61,8 @@ void Game::render(SDL_Renderer* r) {
 		&Colors::PLAYER5,
 	};
 	for (unsigned i=(currentPlayer_+1)%players_.size(), n=0; n<players_.size(); n++, i=(i+1)%players_.size()) {
-		colors[players_[i]->color()]->set(r);
-		for (auto &a : arrows_[i]) {
+		colors[players_[i].player->color()]->set(r);
+		for (auto &a : players_[i].arrows) {
 			ScreenPoint p1 = track_->grid()->gridToScreen(a.from);
 			ScreenPoint p2 = track_->grid()->gridToScreen(a.to);
 			//SDL_RenderDrawLine(r, p1.x, p1.y, p2.x, p2.y);
@@ -74,10 +74,8 @@ void Game::render(SDL_Renderer* r) {
 bool Game::addPlayer(Player* player) {
 	if (players_.size() < track_->getStartPositions().size()) {
 		player->setColor(players_.size());
-		players_.push_back(player);
-		arrows_.push_back({});
-		playerOffTrack_.push_back({false, {-1, -1}});
 		player->setOffTrackData({false, {-1, -1}});
+		players_.push_back(PlayerInfo{player});
 		return true;
 	} else
 		return false;
@@ -96,8 +94,6 @@ void Game::reset() {
 	if (state_ != STATE_STOPPED)
 		stop();
 	players_.clear();
-	arrows_.clear();
-	playerOffTrack_.clear();
 	startPosTaken_.clear();
 	currentPlayer_ = 0;
 	turnTimer_ = 0;
@@ -111,9 +107,9 @@ void Game::nextTurn() {
 	if (state_ == STATE_WAITING_PLAYERS || state_ == STATE_STOPPED)
 		return;
 	if (currentPlayer_ >= 0)
-		players_[currentPlayer_]->endTurn();
+		players_[currentPlayer_].player->endTurn();
 	if (checkWin()) {
-		players_[currentPlayer_]->activateTurn(Player::TURN_FINISHED);
+		players_[currentPlayer_].player->activateTurn(Player::TURN_FINISHED);
 	}
 	if (++currentPlayer_ == players_.size()) {
 		// all players took their turn for this round
@@ -121,7 +117,7 @@ void Game::nextTurn() {
 		if (state_ == STATE_START_SELECTION) {
 			setState(STATE_PLAYING);
 		} else {
-			while (players_[currentPlayer_]->isFinished() && currentPlayer_ < players_.size())
+			while (players_[currentPlayer_].player->isFinished() && currentPlayer_ < players_.size())
 				currentPlayer_++;
 			if (currentPlayer_ == players_.size()) {
 				// all players finished the game
@@ -130,8 +126,8 @@ void Game::nextTurn() {
 			}
 		}
 	}
-	players_[currentPlayer_]->activateTurn(state_ == STATE_START_SELECTION ? Player::TURN_SELECT_START : Player::TURN_MOVE);
-	players_[currentPlayer_]->setAllowedVectors(getPlayerVectors());
+	players_[currentPlayer_].player->activateTurn(state_ == STATE_START_SELECTION ? Player::TURN_SELECT_START : Player::TURN_MOVE);
+	players_[currentPlayer_].player->setAllowedVectors(getPlayerVectors());
 	onTurnAdvance.trigger();
 }
 
@@ -143,8 +139,11 @@ bool Game::checkWin() {
 		when player is OUTSIDE of track and crosses the start-line INFINITE LINE, his laps is also incremented/decremented based on direction
 			this is to avoid player cheating, exiting the track, going behind start-line and instantly winning when returning back and crossing it
 	*/
+	if (int cross = track_->checkStartLineCross(players_[currentPlayer_].arrows.back().from, players_[currentPlayer_].arrows.back().to, false)) {
+		for (unsigned i=0; i<players_[currentPlayer_].arrows.size() - 1; i++)
+			cross += track_->checkStartLineCross(players_[currentPlayer_].arrows[i].from, players_[currentPlayer_].arrows[i].to, true);
+	}
 	return false;
-	// TODO...
 }
 
 bool Game::validatePlayerMove(GridPoint move) {
@@ -164,24 +163,24 @@ std::vector<Arrow> Game::getPlayerVectors() {
 					track_->getStartPositions()[i].direction.first,
 					track_->getStartPositions()[i].direction.second));
 	} else if (state_ == STATE_PLAYING) {
-		auto lastDir = arrows_[currentPlayer_].back().direction();
-		GridPoint lastP = arrows_[currentPlayer_].back().to;
+		auto lastDir = players_[currentPlayer_].arrows.back().direction();
+		GridPoint lastP = players_[currentPlayer_].arrows.back().to;
 		Arrow center = Arrow::fromPointAndDir(lastP, lastDir.first, lastDir.second);
 		for (int i=-1; i<=1; i++)
 			for (int j=-1; j<=1; j++) {
 				Arrow a {center.from, {center.to.x + j, center.to.y + i}};
-				int maxLength = playerOffTrack_[currentPlayer_].first ? 1 : 6;
+				int maxLength = players_[currentPlayer_].isOffTrack ? 1 : 6;
 				if (a.length() > maxLength)
 					continue;
 				if (!pathIsFree(a))
 					continue;
-				if (playerOffTrack_[currentPlayer_].first) {
+				if (players_[currentPlayer_].isOffTrack) {
 					// player was off-track, must check if the current arrow would get him back on
 					// and if it does, only allow it if it re-enters the track behind his exit position
 					WorldPoint arrowTipW = track_->grid()->gridToWorld(a.to);
 					if (track_->pointInsidePolygon(arrowTipW, 0) && !track_->pointInsidePolygon(arrowTipW, 1)) {
 						auto crossIndex = track_->computeCrossingIndex(a.from, a.to);
-						if ((crossIndex.second - playerOffTrack_[currentPlayer_].second.second) * track_->polyDirection(crossIndex.first) > 0)
+						if ((crossIndex.second - players_[currentPlayer_].trackCrossingIndex.second) * track_->polyDirection(crossIndex.first) > 0)
 							continue;
 					}
 				}
@@ -193,9 +192,9 @@ std::vector<Arrow> Game::getPlayerVectors() {
 }
 
 Arrow Game::autoSelectPlayerVector() {
-	if (!arrows_[currentPlayer_].size())
+	if (!players_[currentPlayer_].arrows.size())
 		throw std::runtime_error("Invalid state!");
-	Arrow lastVector = arrows_[currentPlayer_].back();
+	Arrow lastVector = players_[currentPlayer_].arrows.back();
 	auto validMoves = getPlayerVectors();
 	// try to keep the same vector as before if it's valid
 	for (auto &a : validMoves)
@@ -219,7 +218,7 @@ Arrow Game::autoSelectPlayerVector() {
 }
 
 void Game::processPlayerSelection() {
-	GridPoint nextPoint = players_[currentPlayer_]->actionPoint();
+	GridPoint nextPoint = players_[currentPlayer_].player->actionPoint();
 	if (!validatePlayerMove(nextPoint)) {
 		nextPoint = autoSelectPlayerVector().to;
 	}
@@ -234,34 +233,34 @@ void Game::processPlayerSelection() {
 				Arrow a = Arrow::fromPointAndDir(track_->getStartPositions()[i].position,
 					track_->getStartPositions()[i].direction.first,
 					track_->getStartPositions()[i].direction.second);
-				arrows_[currentPlayer_].push_back(a);
-				players_[currentPlayer_]->setLastArrow(a);
+				players_[currentPlayer_].arrows.push_back(a);
+				players_[currentPlayer_].player->setLastArrow(a);
 				startPosTaken_[i] = true;
 				return;
 			}
 		}
 		// if we got here, player's selection was none of the valid ones, kick him out
-		players_[currentPlayer_]->activateTurn(Player::TURN_FINISHED);
+		players_[currentPlayer_].player->activateTurn(Player::TURN_FINISHED);
 		break;
 	case STATE_PLAYING: {
-		Arrow a = {arrows_[currentPlayer_].back().to, nextPoint};
-		arrows_[currentPlayer_].push_back(a);
-		players_[currentPlayer_]->setLastArrow(a);
+		Arrow a = {players_[currentPlayer_].arrows.back().to, nextPoint};
+		players_[currentPlayer_].arrows.push_back(a);
+		players_[currentPlayer_].player->setLastArrow(a);
 		// check if player went off the track
 		if (!track_->pointInsidePolygon(track_->grid()->gridToWorld(nextPoint), 0)
 			|| track_->pointInsidePolygon(track_->grid()->gridToWorld(nextPoint), 1)) {
-				if (!playerOffTrack_[currentPlayer_].first) {
+				if (!players_[currentPlayer_].isOffTrack) {
 					// player is off track, set his speed to zero
-					playerOffTrack_[currentPlayer_].first = true;
-					playerOffTrack_[currentPlayer_].second = track_->computeCrossingIndex(a.from, a.to);
-					players_[currentPlayer_]->setOffTrackData(playerOffTrack_[currentPlayer_]);
-					arrows_[currentPlayer_].push_back({nextPoint, nextPoint});
-					players_[currentPlayer_]->setLastArrow(arrows_[currentPlayer_].back());
+					players_[currentPlayer_].isOffTrack = true;
+					players_[currentPlayer_].trackCrossingIndex = track_->computeCrossingIndex(a.from, a.to);
+					players_[currentPlayer_].player->setOffTrackData({true, players_[currentPlayer_].trackCrossingIndex});
+					players_[currentPlayer_].arrows.push_back({nextPoint, nextPoint});
+					players_[currentPlayer_].player->setLastArrow(players_[currentPlayer_].arrows.back());
 				}
-			} else if (playerOffTrack_[currentPlayer_].first) {
+			} else if (players_[currentPlayer_].isOffTrack) {
 				// player went back on track
-				playerOffTrack_[currentPlayer_].first = false;
-				players_[currentPlayer_]->setOffTrackData({false, {-1, -1}});
+				players_[currentPlayer_].isOffTrack = false;
+				players_[currentPlayer_].player->setOffTrackData({false, {-1, -1}});
 			}
 	} break;
 	default:
@@ -273,13 +272,13 @@ bool Game::pathIsFree(Arrow const& a) const {
 	WorldPoint p1 = track_->grid()->gridToWorld(a.from);
 	WorldPoint p2 = track_->grid()->gridToWorld(a.to);
 	for (unsigned i=0; i<players_.size(); i++) {
-		if (!arrows_[i].size())
+		if (!players_[i].arrows.size())
 			continue;
-		if (a.from == arrows_[i].back().to)	// we ignore the previous arrow because it would yield a false positive
+		if (a.from == players_[i].arrows.back().to)	// we ignore the previous arrow because it would yield a false positive
 			continue;
-		if (a.to == arrows_[i].back().to)	// arrow would end up on top of an occupied position
+		if (a.to == players_[i].arrows.back().to)	// arrow would end up on top of an occupied position
 			return false;
-		WorldPoint q = track_->grid()->gridToWorld(arrows_[i].back().to);
+		WorldPoint q = track_->grid()->gridToWorld(players_[i].arrows.back().to);
 		if (lineMath::onSegment(p1, q, p2))	// arrow would cross another player's position
 			return false;
 	}

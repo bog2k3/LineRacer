@@ -61,6 +61,13 @@ public:
 	unsigned polyLength(unsigned index) const { assert(index <= 1); return polyVertex_[index].size(); }
 	// returns the [index] vertex from [poly] polygon
 	WorldPoint polyVertex(unsigned poly, unsigned index) const { assert(poly<=1 && index < polyVertex_[poly].size()); return polyVertex_[poly][index]; }
+	// checks if a line [from, to] crosses the start-line
+	//		* checks segment if extended==false
+	//		* checks infinite line if extended==true
+	// returns +1 if the line crosses the start line from back to front
+	// returns -1 if the line crosses the start line from front to back
+	// returns 0 if they don't cross
+	int checkStartLineCross(GridPoint const& from, GridPoint const& to, bool extended) const;
 
 	Grid* grid() const { return grid_; }
 	WorldArea* worldArea() const { return worldArea_; }

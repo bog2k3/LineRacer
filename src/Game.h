@@ -31,7 +31,7 @@ public:
 	};
 
 	GameState state() const { return state_; }
-	Player* activePlayer() const { return currentPlayer_ >= 0 && currentPlayer_ < players_.size() ? players_[currentPlayer_] : nullptr; }
+	Player* activePlayer() const { return currentPlayer_ >= 0 && currentPlayer_ < players_.size() ? players_[currentPlayer_].player : nullptr; }
 
 	bool pathIsFree(Arrow const& a) const; // returns true if the arrow doesn't intersect any player's position
 	bool isPointOnTrack(GridPoint const& p) const; // returns true if the point is within the track limits
@@ -42,11 +42,19 @@ public:
 	Event<void()> onTurnAdvance;
 
 private:
+	struct PlayerInfo {
+		Player* player;
+		std::vector<Arrow> arrows;
+		int laps = 0;
+		bool isOffTrack = false;
+		std::pair<int, float> trackCrossingIndex {0, 0};	// first: contour index; second: track crossing index: point on track where he exited
+
+		PlayerInfo(Player* p) : player(p) {}
+	};
+
 	Track* track_;
 	float turnTimeLimit_;
-	std::vector<Player*> players_;
-	std::vector<std::vector<Arrow>> arrows_;
-	std::vector<std::pair<bool, std::pair<int, float>>> playerOffTrack_;	// first: if true, player is out; second - contour index & track crossing index: point on track where he exited
+	std::vector<PlayerInfo> players_;
 	std::vector<bool> startPosTaken_;
 	GameState state_ = STATE_WAITING_PLAYERS;
 	int currentPlayer_ = 0;
