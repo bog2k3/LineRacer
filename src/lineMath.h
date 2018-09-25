@@ -34,10 +34,11 @@ double vectorAngle(WorldPoint const& origin, WorldPoint const& A, WorldPoint con
 IntersectionResult segmentIntersect(WorldPoint const& p1a, WorldPoint const& p1b, WorldPoint const& p2a, WorldPoint const& p2b);
 
 // checks if segment s1->s2 intersects infinite line l1->l2
-IntersectionResult segmentIntersectLine(WorldPoint const& s1, WorldPoint const& s2, WorldPoint const& l1, WorldPoint const& l2)
+IntersectionResult segmentIntersectLine(WorldPoint const& s1, WorldPoint const& s2, WorldPoint const& l1, WorldPoint const& l2);
 
-// returns the intersection point of two segments. This function assumes the segments DO intersect, so you need to check that before
-WorldPoint intersectionPoint(WorldPoint const& p1a, WorldPoint const& p1b, WorldPoint const& p2a, WorldPoint const& p2b);
+// returns the intersection point of two segments (or one segment and one line). This function assumes the segments DO intersect, so you need to check that before
+// if extendSecond=true then p2a->p2b is treated as an infinite line
+WorldPoint intersectionPoint(WorldPoint const& p1a, WorldPoint const& p1b, WorldPoint const& p2a, WorldPoint const& p2b, bool extendSecond=false);
 
 // Given three colinear points p, q, r, the function checks if
 // point q lies on line segment 'pr'

@@ -27,7 +27,7 @@ Transform tr;
 Grid grid(squareSize, windowW, windowH);
 WorldArea warea(&grid, {1, 1}, {63, 35});
 Track track(&grid, &warea, trackResolution);
-Game game(&track, TURN_TIME_LIMIT);
+Game game(&track, TURN_TIME_LIMIT, 1);
 HumanController hctrl(game, grid);
 
 GUISystem guiSystem;

@@ -12,7 +12,7 @@ class Player;
 
 class Game {
 public:
-	Game(Track* track, float turnTimeLimit);
+	Game(Track* track, float turnTimeLimit, unsigned targetLaps);
 	~Game();
 
 	void update(float dt);
@@ -35,6 +35,7 @@ public:
 
 	bool pathIsFree(Arrow const& a) const; // returns true if the arrow doesn't intersect any player's position
 	bool isPointOnTrack(GridPoint const& p) const; // returns true if the point is within the track limits
+	bool isPointOnTrack(WorldPoint const& p) const; // returns true if the point is within the track limits
 
 	Track* track() const { return track_; }
 
@@ -48,6 +49,7 @@ private:
 		int laps = 0;
 		bool isOffTrack = false;
 		std::pair<int, float> trackCrossingIndex {0, 0};	// first: contour index; second: track crossing index: point on track where he exited
+		int startLineCrossCount = 0;	// counts how many times the player crossed the start line (sign depends on direction)
 
 		PlayerInfo(Player* p) : player(p) {}
 	};
@@ -59,6 +61,7 @@ private:
 	GameState state_ = STATE_WAITING_PLAYERS;
 	int currentPlayer_ = 0;
 	float turnTimer_ = 0.f;
+	unsigned targetLaps_ = 1;
 
 	void setState(GameState state);
 	void nextTurn();

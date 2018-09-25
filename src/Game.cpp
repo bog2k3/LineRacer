@@ -12,8 +12,8 @@
 #include <stdexcept>
 #include <algorithm>
 
-Game::Game(Track* track, float turnTimeLimit)
-	: track_(track), turnTimeLimit_(turnTimeLimit)
+Game::Game(Track* track, float turnTimeLimit, unsigned targetLaps)
+	: track_(track), turnTimeLimit_(turnTimeLimit), targetLaps_(targetLaps)
 {
 }
 
@@ -106,18 +106,20 @@ void Game::nextTurn() {
 		setState(STATE_STOPPED);
 	if (state_ == STATE_WAITING_PLAYERS || state_ == STATE_STOPPED)
 		return;
-	if (currentPlayer_ >= 0)
+	if (currentPlayer_ >= 0) {
 		players_[currentPlayer_].player->endTurn();
-	if (checkWin()) {
-		players_[currentPlayer_].player->activateTurn(Player::TURN_FINISHED);
+		if (checkWin())
+			players_[currentPlayer_].player->activateTurn(Player::TURN_FINISHED);
 	}
-	if (++currentPlayer_ == players_.size()) {
+	while (++currentPlayer_ < players_.size() && players_[currentPlayer_].player->isFinished()) {
+	}
+	if (currentPlayer_ == players_.size()) {
 		// all players took their turn for this round
 		currentPlayer_ = 0;
 		if (state_ == STATE_START_SELECTION) {
 			setState(STATE_PLAYING);
 		} else {
-			while (players_[currentPlayer_].player->isFinished() && currentPlayer_ < players_.size())
+			while (currentPlayer_ < players_.size() && players_[currentPlayer_].player->isFinished())
 				currentPlayer_++;
 			if (currentPlayer_ == players_.size()) {
 				// all players finished the game
@@ -139,8 +141,16 @@ bool Game::checkWin() {
 		when player is OUTSIDE of track and crosses the start-line INFINITE LINE, his laps is also incremented/decremented based on direction
 			this is to avoid player cheating, exiting the track, going behind start-line and instantly winning when returning back and crossing it
 	*/
-	if (int cross = track_->checkStartLineCross(players_[currentPlayer_].arrows.back().from, players_[currentPlayer_].arrows.back().to, false)) {
-		players_[currentPlayer_].laps += cross;
+	if (players_[currentPlayer_].arrows.size() < 2)
+		return false;
+	int cross = track_->checkStartLineCross(players_[currentPlayer_].arrows.back().from, players_[currentPlayer_].arrows.back().to, false);
+	players_[currentPlayer_].startLineCrossCount += cross;
+	if (cross > 0 && players_[currentPlayer_].startLineCrossCount > 0) {
+		players_[currentPlayer_].laps++;
+		if (players_[currentPlayer_].laps >= targetLaps_) {
+			// player won
+			return true;
+		}
 	}
 	return false;
 }
@@ -261,6 +271,14 @@ void Game::processPlayerSelection() {
 				players_[currentPlayer_].isOffTrack = false;
 				players_[currentPlayer_].player->setOffTrackData({false, {-1, -1}});
 			}
+		// check if arrow crosses the infinite start-line outside of the track
+		WorldPoint intersect;
+		int crossSign = track_->checkStartLineCross(a.from, a.to, true, &intersect);
+		if (crossSign != 0) {
+			if (!isPointOnTrack(intersect)) {
+				players_[currentPlayer_].startLineCrossCount += crossSign;
+			}
+		}
 	} break;
 	default:
 		throw std::runtime_error("what are you trying to do?");
@@ -286,7 +304,11 @@ bool Game::pathIsFree(Arrow const& a) const {
 	return true;
 }
 
+bool Game::isPointOnTrack(WorldPoint const& wp) const {
+	return track_->pointInsidePolygon(wp, 0) && !track_->pointInsidePolygon(wp, 1);
+}
+
 bool Game::isPointOnTrack(GridPoint const& p) const {
 	WorldPoint wp = track_->grid()->gridToWorld(p);
-	return track_->pointInsidePolygon(wp, 0) && !track_->pointInsidePolygon(wp, 1);
+	return isPointOnTrack(wp);
 }

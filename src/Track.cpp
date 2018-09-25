@@ -456,7 +456,7 @@ int Track::polyDirection(unsigned polyIndex) const {
 	return polyOrientation_[polyIndex] == startLine_.orientation ? +1 : -1;
 }
 
-int Track::checkStartLineCross(GridPoint const& from, GridPoint const& to, bool extended) const {
+int Track::checkStartLineCross(GridPoint const& from, GridPoint const& to, bool extended, WorldPoint* out_Point) const {
 	WorldPoint fw = grid_->gridToWorld(from);
 	WorldPoint tw = grid_->gridToWorld(to);
 	lineMath::IntersectionResult res;
@@ -464,8 +464,11 @@ int Track::checkStartLineCross(GridPoint const& from, GridPoint const& to, bool 
 		res = lineMath::segmentIntersectLine(fw, tw, startLine_.p1, startLine_.p2);
 	else
 		res = lineMath::segmentIntersect(fw, tw, startLine_.p1, startLine_.p2);
-	if (res == lineMath::INTERSECT_NONE || lineMath::INTERSECT_OVERLAP)
+	if (res == lineMath::INTERSECT_NONE || res == lineMath::INTERSECT_OVERLAP || res == lineMath::INTERSECT_ENDPOINT1)
 		return 0;
+	if (out_Point) {
+		*out_Point = lineMath::intersectionPoint(fw, tw, startLine_.p1, startLine_.p2, extended);
+	}
 	int dot = (to.x - from.x) * startLine_.startPositions[0].direction.first +
 			(to.y - from.y) * startLine_.startPositions[0].direction.second;
 	return dot > 0 ? +1 : -1;

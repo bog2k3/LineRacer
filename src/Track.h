@@ -67,7 +67,8 @@ public:
 	// returns +1 if the line crosses the start line from back to front
 	// returns -1 if the line crosses the start line from front to back
 	// returns 0 if they don't cross
-	int checkStartLineCross(GridPoint const& from, GridPoint const& to, bool extended) const;
+	// out_Point: if not null, will be filled with the intersection point
+	int checkStartLineCross(GridPoint const& from, GridPoint const& to, bool extended, WorldPoint* out_Point=nullptr) const;
 
 	Grid* grid() const { return grid_; }
 	WorldArea* worldArea() const { return worldArea_; }
