@@ -11,6 +11,7 @@
 #include "color.h"
 
 #include <SDL2/SDL.h>
+#include <asio.hpp>
 
 #include <iostream>
 #include <algorithm>
@@ -183,7 +184,7 @@ void initialize() {
 }
 
 #ifdef __WIN32__
-int WinMain() {
+int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
 #else
 int main() {
 #endif

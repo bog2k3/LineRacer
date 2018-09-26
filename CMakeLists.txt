@@ -26,6 +26,9 @@ add_executable(LineRacer ${sources})
 
 #add libraries
 target_link_libraries(LineRacer PUBLIC SDL2)
+if (WIN32)
+	target_link_libraries(LineRacer PUBLIC ws2_32)
+endif()
 
 set_property(TARGET LineRacer PROPERTY CXX_STANDARD 14)
 target_compile_options(LineRacer PUBLIC -Wall -std=c++14)
