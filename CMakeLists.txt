@@ -28,6 +28,8 @@ add_executable(LineRacer ${sources})
 target_link_libraries(LineRacer PUBLIC SDL2)
 if (WIN32)
 	target_link_libraries(LineRacer PUBLIC ws2_32)
+else()
+	target_link_libraries(LineRacer PUBLIC pthread)
 endif()
 
 set_property(TARGET LineRacer PROPERTY CXX_STANDARD 14)
