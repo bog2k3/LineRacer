@@ -8,10 +8,14 @@ project(LineRacer)
 # Set the output folder where your program will be created
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 
+file(READ ".boglfw_path" BOGLFW_DIST_DIR)
+
 # The following folder will be included
+include_directories("${BOGLFW_DIST_DIR}/include")
+link_directories("${BOGLFW_DIST_DIR}/lib")
 if (WIN32)
-	link_directories("/mingw/lib")
-	include_directories("/mingw/include")
+	link_directories("/mingw64/lib")
+	include_directories("/mingw64/include")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__WIN32__")
 else()
 	link_directories("/usr/lib")
