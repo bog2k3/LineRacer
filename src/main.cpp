@@ -207,7 +207,7 @@ int main() {
 	}
 
 	if (!gltInitWithSDL(window)) {
-		std::cerr << "Could not initialize OpenGL!\n";
+		std::cerr << "Could not initialize OpenGL!: " << SDL_GetError() << "\n";
 		return -1;
 	}
 
