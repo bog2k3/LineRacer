@@ -10,7 +10,7 @@
 #include "GUI/Button.h"
 #include "color.h"
 
-#include <boglfw/renderOpenGL/GLText.h>
+#include <boglfw/renderOpenGL/glToolkit.h>
 
 #include <SDL2/SDL.h>
 #include <asio.hpp>
@@ -200,9 +200,15 @@ int main() {
 
 	atexit(SDL_Quit);
 
-	window = SDL_CreateWindow("Line Racer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowW, windowH, SDL_WINDOW_SHOWN);
+	window = SDL_CreateWindow("Line Racer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowW, windowH, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
 	if (!window) {
 		std::cerr << "Could not create SDL window! SDL_Error: " << SDL_GetError() << "\n";
+		return -1;
+	}
+
+	if (!gltInitWithSDL(window)) {
+		std::cerr << "Could not initialize OpenGL!\n";
+		return -1;
 	}
 
 	screenSurf = SDL_GetWindowSurface(window);
