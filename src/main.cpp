@@ -10,6 +10,8 @@
 #include "GUI/Button.h"
 #include "color.h"
 
+#include <boglfw/renderOpenGL/GLText.h>
+
 #include <SDL2/SDL.h>
 #include <asio.hpp>
 
