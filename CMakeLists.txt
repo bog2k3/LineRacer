@@ -9,6 +9,7 @@ project(LineRacer)
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 
 file(READ ".boglfw_path" BOGLFW_DIST_DIR)
+string(STRIP ${BOGLFW_DIST_DIR} BOGLFW_DIST_DIR)
 
 # The following folder will be included
 include_directories("${BOGLFW_DIST_DIR}/include")
@@ -29,11 +30,11 @@ file(GLOB_RECURSE sources 	src/*.cpp)
 add_executable(LineRacer ${sources})
 
 #add libraries
-target_link_libraries(LineRacer PUBLIC boglfw SDL2 GLEW glfw3 OpenGL32)
+target_link_libraries(LineRacer PUBLIC boglfw SDL2 GLEW glfw3)
 if (WIN32)
-	target_link_libraries(LineRacer PUBLIC ws2_32)
+	target_link_libraries(LineRacer PUBLIC ws2_32 opengl32)
 else()
-	target_link_libraries(LineRacer PUBLIC pthread)
+	target_link_libraries(LineRacer PUBLIC pthread GL)
 endif()
 
 set_property(TARGET LineRacer PROPERTY CXX_STANDARD 14)
