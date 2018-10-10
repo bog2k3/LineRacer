@@ -19,6 +19,11 @@ HumanController::HumanController(Game& game, Grid& grid)
 }
 
 void HumanController::onPointerMoved(GridPoint where) {
+	if (!game_.activePlayer()
+		|| game_.activePlayer()->type() != Player::TYPE_HUMAN
+		|| !game_.activePlayer()->isTurnActive())
+		return;
+
 	hoverPoint_ = where;
 	if (pointerDown_ && isPointSelectable(where)) {
 		selectedPoint_ = hoverPoint_;
