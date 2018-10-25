@@ -10,7 +10,7 @@
 class Grid;
 class WorldArea;
 struct GridPoint;
-struct SDL_Renderer;
+class Viewport;
 
 enum class TrackDesignStep {
 	DRAW,
@@ -28,7 +28,7 @@ public:
 	Track(Grid* grid, WorldArea* warea, float resolution);
 	~Track();
 
-	void render(SDL_Renderer* r);
+	void draw(Viewport*);
 
 	void reset(); // clears the track
 	void enableDesignMode(bool enable);

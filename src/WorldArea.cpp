@@ -2,7 +2,7 @@
 #include "Grid.h"
 #include "color.h"
 
-#include <SDL2/SDL_render.h>
+#include <boglfw/renderOpenGL/Shape2D.h>
 
 WorldArea::WorldArea(Grid *g, GridPoint topLeft, GridPoint bottomRight)
 	: grid_(g)
@@ -12,37 +12,28 @@ WorldArea::WorldArea(Grid *g, GridPoint topLeft, GridPoint bottomRight)
 WorldArea::~WorldArea() {
 }
 
-void WorldArea::render(SDL_Renderer* r) {
+void WorldArea::draw(Viewport*) {
 	ScreenPoint sTopLeft = grid_->gridToScreen(topLeft_);
 	ScreenPoint sBottomRight = grid_->gridToScreen(bottomRight_);
 
-	Colors::GRID.set(r);
 	const int thickness = 1;
 
 	// left edge
-	SDL_Rect rc {
-		sTopLeft.x - thickness, sTopLeft.y - thickness,
-		1 + 2*thickness, (sBottomRight.y - sTopLeft.y) + 2*thickness
-	};
-	SDL_RenderFillRect(r, &rc);
+	glm::vec2 pos {sTopLeft.x - thickness, sTopLeft.y - thickness};
+	glm::vec2 sz {1 + 2*thickness, (sBottomRight.y - sTopLeft.y) + 2*thickness};
+	Shape2D::get()->drawRectangleFilled(pos, 0, sz, Colors::GRID);
 	// top edge
-	rc = {
-		sTopLeft.x - thickness, sTopLeft.y - thickness,
-		(sBottomRight.x - sTopLeft.x) + 2*thickness, 1 + 2*thickness
-	};
-	SDL_RenderFillRect(r, &rc);
+	pos = {sTopLeft.x - thickness, sTopLeft.y - thickness};
+	sz = {(sBottomRight.x - sTopLeft.x) + 2*thickness, 1 + 2*thickness};
+	Shape2D::get()->drawRectangleFilled(pos, 0, sz, Colors::GRID);
 	// right edge
-	rc = {
-		sBottomRight.x - thickness, sTopLeft.y - thickness,
-		1 + 2*thickness, (sBottomRight.y - sTopLeft.y) + 2*thickness
-	};
-	SDL_RenderFillRect(r, &rc);
+	pos = {sBottomRight.x - thickness, sTopLeft.y - thickness};
+	sz = {1 + 2*thickness, (sBottomRight.y - sTopLeft.y) + 2*thickness};
+	Shape2D::get()->drawRectangleFilled(pos, 0, sz, Colors::GRID);
 	// bottom edge
-	rc = {
-		sTopLeft.x - thickness, sBottomRight.y - thickness,
-		(sBottomRight.x - sTopLeft.x) + 2*thickness, 1 + 2*thickness
-	};
-	SDL_RenderFillRect(r, &rc);
+	pos = {sTopLeft.x - thickness, sBottomRight.y - thickness};
+	sz = {(sBottomRight.x - sTopLeft.x) + 2*thickness, 1 + 2*thickness};
+	Shape2D::get()->drawRectangleFilled(pos, 0, sz, Colors::GRID);
 }
 
 bool WorldArea::containsPoint(WorldPoint const& wp) const {

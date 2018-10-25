@@ -7,8 +7,8 @@
 #include <vector>
 
 class Track;
-struct SDL_Renderer;
 class Player;
+class Viewport;
 
 class Game {
 public:
@@ -16,7 +16,7 @@ public:
 	~Game();
 
 	void update(float dt);
-	void render(SDL_Renderer* r);
+	void draw(Viewport*);
 
 	void reset(); // resets the entire game, and removes all players
 	bool addPlayer(Player* player);	// returns true if player was added and false if it couldn't be added (session is full)

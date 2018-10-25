@@ -4,14 +4,13 @@
 #include "Grid.h"
 
 struct WorldPoint;
-struct SDL_Renderer;
 
 class WorldArea {
 public:
 	WorldArea(Grid *g, GridPoint topLeft, GridPoint bottomRight);
 	~WorldArea();
 
-	void render(SDL_Renderer* r);
+	void draw(Viewport*);
 
 	bool containsPoint(WorldPoint const& wp) const;
 

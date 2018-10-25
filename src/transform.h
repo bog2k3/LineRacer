@@ -1,6 +1,8 @@
 #ifndef __TRANSFORM_H__
 #define __TRANSFORM_H__
 
+#include <glm/vec2.hpp>
+
 #include <cmath>
 #include <utility>
 
@@ -34,6 +36,10 @@ struct ScreenPoint {
 	int y=0;
 
 	WorldPoint toWorld(Transform const& tr);
+
+	operator glm::vec2() const {
+		return {x, y};
+	}
 };
 
 struct GridPoint {
@@ -61,5 +67,15 @@ struct Arrow {
 		return Arrow{p, {p.x + dirX, p.y + dirY}};
 	}
 };
+
+template<class P, typename T1 = decltype(P::x), typename T2 = decltype(P::y)>
+P operator+ (P const& p1, P const& p2) {
+	return P{p1.x + p2.x, p1.y + p2.y};
+}
+
+template<class P, typename T1 = decltype(P::x), typename T2 = decltype(P::y)>
+P operator- (P const& p1, P const& p2) {
+	return P{p1.x - p2.x, p1.y - p2.y};
+}
 
 #endif //__TRANSFORM_H__

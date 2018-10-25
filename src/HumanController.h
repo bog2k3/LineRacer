@@ -7,7 +7,7 @@
 
 class Game;
 class Grid;
-struct SDL_Renderer;
+class Viewport;
 
 // controller for local human player
 // handles local input events and translates them into Player actions
@@ -21,7 +21,7 @@ public:
 	// this is called by the game when a new turn starts
 	void nextTurn();
 
-	void render(SDL_Renderer* r);
+	void draw(Viewport*);
 
 private:
 	Game& game_;

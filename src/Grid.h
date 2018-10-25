@@ -3,7 +3,7 @@
 
 #include "transform.h"
 
-struct SDL_Renderer;
+class Viewport;
 
 class Grid {
 public:
@@ -12,7 +12,7 @@ public:
 
 	void setTransform(Transform t) { tr_ = t; }
 	Transform const& getTransform() const { return tr_; }
-	void render(SDL_Renderer *r);
+	void draw(Viewport*);
 
 	int cellSize() { return size_; }
 	ScreenPoint gridToScreen(GridPoint p) const;

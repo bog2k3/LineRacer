@@ -1,6 +1,8 @@
 #ifndef __COLOR_H__
 #define __COLOR_H__
 
+#include <glm/vec4.hpp>
+
 struct SDL_Renderer;
 
 struct Color {
@@ -9,6 +11,10 @@ struct Color {
 
 	Color(int r, int g, int b) : r(r), g(g), b(b) {}
 	Color(int r, int g, int b, int a) : r(r), g(g), b(b), a(a) {}
+
+	operator glm::vec4() const {
+		return {r, g, b, a};
+	}
 
 	void set(SDL_Renderer* r) const;
 };

@@ -11,7 +11,7 @@ public:
 	Button(int x, int y, int w, int h);
 	virtual ~Button() override {}
 
-	virtual void render(SDL_Renderer* r) override;
+	virtual void draw(Viewport*) override;
 
 	void setText(std::string text);
 	void setIcon(...);

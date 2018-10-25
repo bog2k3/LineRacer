@@ -1,30 +1,24 @@
 #include "Painter.h"
 #include "lineMath.h"
+#include "color.h"
 
-#include <SDL2/SDL_render.h>
-//#include <SDL2/SDL_rect.h>
-
-static SDL_Renderer* renderer = nullptr;
-
-void Painter::setRenderer(SDL_Renderer* r) {
-	renderer = r;
-}
+#include <boglfw/renderOpenGL/Shape2D.h>
 
 void Painter::loadResources() {
 	// load textures and shit
 }
 
-void Painter::paintArrow(ScreenPoint const& from, ScreenPoint const& to, int headSize, float headAperture) {
+void Painter::paintArrow(ScreenPoint const& from, ScreenPoint const& to, int headSize, float headAperture, Color const& c) {
 	ScreenPoint dir {to.x - from.x, to.y - from.y};
 	if (dir.x == 0 && dir.y == 0)
 		return;
 	float angle = lineMath::pointDirection(dir) + M_PI;
 
 	// draw arrow body:
-	SDL_RenderDrawLine(renderer, from.x, from.y, to.x, to.y);
+	Shape2D::get()->drawLine(from, to, 0.f, c);
 	// draw arrow head:
 	ScreenPoint pL {to.x + cosf(angle+headAperture*0.5f) * headSize, to.y + sinf(angle+headAperture*0.5f) * headSize};
 	ScreenPoint pR {to.x + cosf(angle-headAperture*0.5f) * headSize, to.y + sinf(angle-headAperture*0.5f) * headSize};
-	SDL_RenderDrawLine(renderer, to.x, to.y, pL.x, pL.y);
-	SDL_RenderDrawLine(renderer, to.x, to.y, pR.x, pR.y);
+	Shape2D::get()->drawLine(to, pL, 0.f, c);
+	Shape2D::get()->drawLine(to, pR, 0.f, c);
 }

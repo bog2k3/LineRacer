@@ -6,7 +6,8 @@
 #include "lineMath.h"
 #include "Painter.h"
 
-#include <SDL2/SDL_render.h>
+#include <boglfw/renderOpenGL/Shape2D.h>
+
 #include <cassert>
 
 static const int PARTITION_CELL_SPAN = 5;
@@ -19,9 +20,8 @@ Track::Track(Grid* grid, WorldArea* warea, float resolution)
 Track::~Track() {
 }
 
-void Track::render(SDL_Renderer* r) {
-	Colors::TRACK.set(r);
-	static std::vector<SDL_Point> vPoints;
+void Track::draw(Viewport*) {
+	static std::vector<glm::vec2> vPoints;
 	vPoints.reserve(std::max(polyVertex_[0].size(), polyVertex_[1].size()));
 	for (int i=0; i<2; i++) {
 		if (polyVertex_[i].size() < 2)
@@ -29,35 +29,30 @@ void Track::render(SDL_Renderer* r) {
 		vPoints.clear();
 		for (unsigned j=0; j<polyVertex_[i].size(); j++) {
 			ScreenPoint sp = polyVertex_[i][j].toScreen(grid_->getTransform());
-			vPoints.push_back({sp.x, sp.y});
+			vPoints.push_back(sp);
 		}
-		SDL_RenderDrawLines(r, vPoints.data(), vPoints.size());
+		Shape2D::get()->drawLineStrip(vPoints.data(), vPoints.size(), 0, Colors::TRACK);
 	}
 	if (designMode_ && designStep_ == TrackDesignStep::DRAW && polyVertex_[currentPolyIdx_].size() > 0) {
 		ScreenPoint p1 = polyVertex_[currentPolyIdx_].back().toScreen(grid_->getTransform());
 		ScreenPoint p2 = floatingVertex_.toScreen(grid_->getTransform());
-		Colors::TRACK_TRANSP.set(r);
-		SDL_RenderDrawLine(r, p1.x, p1.y, p2.x, p2.y);
+		Shape2D::get()->drawLine(p1, p2, 0, Colors::TRACK_TRANSP);
 
 		// if snapping close, draw the snap anchor
 		if (polyVertex_[currentPolyIdx_].size() > 2 && floatingVertex_ == polyVertex_[currentPolyIdx_][0]) {
 			const int snapAnchorRadius = 3;
-			Colors::TRACK_SNAP.set(r);
-			ScreenPoint anchor = floatingVertex_.toScreen(grid_->getTransform());
-			SDL_Rect rc {anchor.x - snapAnchorRadius, anchor.y-snapAnchorRadius, 2*snapAnchorRadius+1, 2*snapAnchorRadius+1};
-			SDL_RenderFillRect(r, &rc);
+			ScreenPoint anchor = floatingVertex_.toScreen(grid_->getTransform()) - ScreenPoint{snapAnchorRadius, snapAnchorRadius};
+			Shape2D::get()->drawRectangleFilled(anchor, 0, {2*snapAnchorRadius+1, 2*snapAnchorRadius+1}, Colors::TRACK_SNAP);
 		}
 	}
 	if (startLine_.isValid) {
-		Colors::STARTLINE.set(r);
 		auto s1 = startLine_.p1.toScreen(grid_->getTransform());
 		auto s2 = startLine_.p2.toScreen(grid_->getTransform());
-		SDL_RenderDrawLine(r, s1.x, s1.y, s2.x, s2.y);
+		Shape2D::get()->drawLine(s1, s2, 0, Colors::STARTLINE);
 		for (auto &spos : startLine_.startPositions) {
 			auto p1 = grid_->gridToScreen(spos.position);
 			auto p2 = grid_->gridToScreen({spos.position.x + spos.direction.first, spos.position.y + spos.direction.second});
-			Painter::paintArrow(p1, p2, 10 * grid_->getTransform().scale, M_PI/6);
-			//SDL_RenderDrawLine(r, p1.x, p1.y, p2.x, p2.y);
+			Painter::paintArrow(p1, p2, 10 * grid_->getTransform().scale, M_PI/6, Colors::STARTLINE);
 		}
 	}
 

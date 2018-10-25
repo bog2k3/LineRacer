@@ -18,7 +18,7 @@ public:
 	void removeElement(int elementHandle);
 	GUIElement* getElement(int elementHandle);
 
-	void render(SDL_Renderer* r);
+	void draw(Viewport*);
 	bool handleEvent(SDL_Event const& e);	// returns true if event was consumed, false if ignored
 
 private:

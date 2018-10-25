@@ -28,10 +28,10 @@ GUIElement* GUISystem::getElement(int elementHandle) {
 	return elements_[elementHandle].get();
 }
 
-void GUISystem::render(SDL_Renderer* r) {
+void GUISystem::draw(Viewport* v) {
 	for (auto &e : elements_) {
 		if (e.get())
-			e->render(r);
+			e->draw(v);
 	}
 }
 

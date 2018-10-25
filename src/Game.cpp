@@ -7,8 +7,6 @@
 #include "color.h"
 #include "Painter.h"
 
-#include <SDL2/SDL_render.h>
-
 #include <stdexcept>
 #include <algorithm>
 
@@ -50,7 +48,7 @@ void Game::update(float dt) {
 	}
 }
 
-void Game::render(SDL_Renderer* r) {
+void Game::draw(Viewport*) {
 	if (state_ != STATE_START_SELECTION && state_ != STATE_PLAYING)
 		return;
 	static const Color* colors[] {
@@ -61,12 +59,10 @@ void Game::render(SDL_Renderer* r) {
 		&Colors::PLAYER5,
 	};
 	for (unsigned i=(currentPlayer_+1)%players_.size(), n=0; n<players_.size(); n++, i=(i+1)%players_.size()) {
-		colors[players_[i].player->color()]->set(r);
 		for (auto &a : players_[i].arrows) {
 			ScreenPoint p1 = track_->grid()->gridToScreen(a.from);
 			ScreenPoint p2 = track_->grid()->gridToScreen(a.to);
-			//SDL_RenderDrawLine(r, p1.x, p1.y, p2.x, p2.y);
-			Painter::paintArrow(p1, p2, 10 * track_->grid()->getTransform().scale, M_PI/6);
+			Painter::paintArrow(p1, p2, 10 * track_->grid()->getTransform().scale, M_PI/6, *colors[players_[i].player->color()]);
 		}
 	}
 }

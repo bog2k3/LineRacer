@@ -1,15 +1,15 @@
 #ifndef __GUI_ELEMENT_H__
 #define __GUI_ELEMENT_H__
 
-struct SDL_Renderer;
 struct GUIEvent;
+class Viewport;
 
 class GUIElement {
 public:
 	virtual ~GUIElement() {}
 	GUIElement() {}
 
-	virtual void render(SDL_Renderer* r) = 0;
+	virtual void draw(Viewport*) = 0;
 
 	// override this to provide arbitrary element shape detection
 	// this is only called if the pointer is within the control's area and by default the entire rectangular area is used as shape

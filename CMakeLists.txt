@@ -30,7 +30,7 @@ file(GLOB_RECURSE sources 	src/*.cpp)
 add_executable(LineRacer ${sources})
 
 #add libraries
-target_link_libraries(LineRacer PUBLIC boglfw SDL2 GLEW glfw3)
+target_link_libraries(LineRacer PUBLIC boglfw SDL2 GLEW glfw3 png)
 if (WIN32)
 	target_link_libraries(LineRacer PUBLIC ws2_32 opengl32)
 else()

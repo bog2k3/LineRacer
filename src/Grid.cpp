@@ -2,7 +2,7 @@
 #include "transform.h"
 #include "color.h"
 
-#include <SDL2/SDL_render.h>
+#include <boglfw/renderOpenGL/Shape2D.h>
 
 Grid::Grid(int size, int winW, int winH) : size_(size), winW_(winW), winH_(winH) {
 }
@@ -10,8 +10,8 @@ Grid::Grid(int size, int winW, int winH) : size_(size), winW_(winW), winH_(winH)
 Grid::~Grid() {
 }
 
-void Grid::render(SDL_Renderer *r) {
-	Colors::GRID.set(r);
+void Grid::draw(Viewport*) {
+	//Colors::GRID.set(r);
 
 	float squareSz = size_ * tr_.scale;
 	int nSqX = ceil(winW_ / squareSz);
@@ -28,13 +28,13 @@ void Grid::render(SDL_Renderer *r) {
 	// draw horizontal lines
 	for (int i=0; i<nSqY; i++) {
 		float y = offsY + i * squareSz;
-		SDL_RenderDrawLine(r, 0, y, winW_, y);
+		//SDL_RenderDrawLine(r, 0, y, winW_, y);
 	}
 
 	// draw vertical lines
 	for (int i=0; i<nSqX; i++) {
 		float x = offsX + i * squareSz;
-		SDL_RenderDrawLine(r, x, 0, x, winH_);
+		//SDL_RenderDrawLine(r, x, 0, x, winH_);
 	}
 }
 

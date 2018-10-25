@@ -8,7 +8,7 @@ public:
 	ButtonRound(int centerX, int centerY, int radius);
 	~ButtonRound() override {}
 
-	void render(SDL_Renderer* r) override;
+	void draw(Viewport*) override;
 	bool containsPoint(int x, int y) override;
 };
 

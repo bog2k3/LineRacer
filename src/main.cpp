@@ -11,6 +11,9 @@
 #include "color.h"
 
 #include <boglfw/renderOpenGL/glToolkit.h>
+#include <boglfw/renderOpenGL/Renderer.h>
+#include <boglfw/renderOpenGL/Viewport.h>
+#include <boglfw/utils/DrawList.h>
 
 #include <SDL2/SDL.h>
 #include <asio.hpp>
@@ -41,12 +44,7 @@ void update(float dt) {
 	game.update(dt);
 }
 
-void render(SDL_Renderer *renderer) {
-	grid.render(renderer);
-	warea.render(renderer);
-	track.render(renderer);
-	game.render(renderer);
-
+void drawMousePoint(Viewport*) {
 	// draw grid point closest to mouse:
 	if (!track.isInDesignMode()) {
 		ScreenPoint p = grid.gridToScreen(mousePoint);
@@ -55,14 +53,9 @@ void render(SDL_Renderer *renderer) {
 			p.x - radius, p.y - radius,
 			2*radius+1, 2*radius+1
 		};
-		Colors::MOUSE_POINT.set(renderer);
-		SDL_RenderFillRect(renderer, &rc);
+		//Colors::MOUSE_POINT.set();
+		//SDL_RenderFillRect(renderer, &rc);
 	}
-
-	hctrl.render(renderer);
-
-	// draw user interface
-	guiSystem.render(renderer);
 }
 
 void handleKeyEvent(SDL_KeyboardEvent &ev) {
@@ -152,7 +145,7 @@ void handleSDLEvent(SDL_Event &ev) {
 }
 
 void initialize() {
-
+	// initialize logic:
 	game.onTurnAdvance.add([&]() {
 		hctrl.nextTurn();
 	});
@@ -210,16 +203,23 @@ int main() {
 		std::cerr << "Could not initialize OpenGL!: " << SDL_GetError() << "\n";
 		return -1;
 	}
+	Renderer boglfwRenderer(windowW, windowH);
+	auto vp = std::make_unique<Viewport>(0, 0, windowW, windowH);
+	auto vp1 = vp.get();
+	boglfwRenderer.addViewport("main", std::move(vp));
 
-	screenSurf = SDL_GetWindowSurface(window);
+	DrawList drawList;
+	drawList.add(&grid);
+	drawList.add(&warea);
+	drawList.add(&track);
+	drawList.add(&game);
+	drawList.add(&drawMousePoint);
+	drawList.add(&hctrl);
+	drawList.add(&guiSystem);
 
-	SDL_FillRect(screenSurf, NULL, SDL_MapRGB( screenSurf->format, 0xFF, 0xF0, 0xE6 ) );
-	SDL_UpdateWindowSurface( window );
-
-	auto renderer = SDL_CreateRenderer(window, -1, 0);
-	Painter::setRenderer(renderer);
-	Colors::BACKGROUND.set(renderer);
-	SDL_RenderClear(renderer);
+	//screenSurf = SDL_GetWindowSurface(window);
+	//SDL_FillRect(screenSurf, NULL, SDL_MapRGB( screenSurf->format, 0xFF, 0xF0, 0xE6 ) );
+	//SDL_UpdateWindowSurface( window );
 
 	initialize();
 
@@ -230,13 +230,13 @@ int main() {
 		}
 		update(0.f);
 
-		Colors::BACKGROUND.set(renderer);
-		SDL_RenderClear(renderer);
-		render(renderer);
-		SDL_RenderPresent(renderer);
+		gltBegin(Colors::BACKGROUND);
+		boglfwRenderer.render(drawList);
+		gltEnd();
 	} while (!SIGNAL_QUIT);
 
-	SDL_DestroyRenderer(renderer);
+	boglfwRenderer.unload();
+
 	SDL_DestroyWindow(window);
 
 	return 0;
