@@ -13,12 +13,12 @@ Button::Button(int x, int y, int w, int h)
 }
 
 void Button::draw(Viewport*) {
-	// draw border
-	Shape2D::get()->drawRectangle({area_.x, area_.y}, 0, {area_.w, area_.h}, Colors::BUTTON_BORDER);
-
 	// draw fill
 	const Color *c = isHover() ? isPressed() ? &Colors::BUTTON_FILL_PRESSED : &Colors::BUTTON_FILL_HOVER : &Colors::BUTTON_FILL;
-	Shape2D::get()->drawRectangleFilled({area_.x+1, area_.y+1}, 0, {area_.w-2, area_.h-2}, *c);
+	Shape2D::get()->drawRectangleFilled({area_.x, area_.y}, 0, {area_.w-1, area_.h-1}, *c);
+	
+	// draw border
+	Shape2D::get()->drawRectangle({area_.x, area_.y}, 0, {area_.w, area_.h}, Colors::BUTTON_BORDER);
 
 	// draw text
 	auto textRc = GLText::get()->getTextRect(text_, 16);
