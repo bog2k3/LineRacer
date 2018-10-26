@@ -7,7 +7,6 @@ uniform mat4 mViewportInverse;
 
 void main() {
 
-    //gl_Position = mViewportInverse * vec4(vPos, 1);
-	gl_Position = vec4(vPos.x/100.0, vPos.y/100.0, 0, 1);
+    gl_Position = mViewportInverse * vec4(vPos, 1);
     fColor = vColor;
 }
