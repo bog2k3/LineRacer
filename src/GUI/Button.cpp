@@ -22,7 +22,8 @@ void Button::draw(Viewport*) {
 
 	// draw text
 	auto textRc = GLText::get()->getTextRect(text_, 16);
-	glm::vec2 textPos = {area_.x + area_.w / 2 - textRc.x / 2, area_.y + area_.h / 2 - textRc.y /2};
+	glm::vec2 offs = {isPressed() && isHover() ? 1 : 0, isPressed() && isHover() ? 3 : 2};
+	glm::vec2 textPos = {area_.x + area_.w / 2 - textRc.x / 2 + offs.x, area_.y + area_.h / 2 + textRc.y / 2 + offs.y};
 	GLText::get()->print(text_, textPos, 0, 16, Colors::BUTTON_TEXT);
 }
 

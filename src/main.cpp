@@ -15,6 +15,7 @@
 #include <boglfw/renderOpenGL/Viewport.h>
 #include <boglfw/renderOpenGL/GLText.h>
 #include <boglfw/renderOpenGL/Shape2D.h>
+#include <boglfw/renderOpenGL/Shape3D.h>
 #include <boglfw/renderOpenGL/ViewportCoord.h>
 #include <boglfw/utils/bitFlags.h>
 
@@ -219,11 +220,11 @@ int main() {
 	drawList.add(&guiSystem);
 
 	auto infoTexts = [&](Viewport*) {
-		GLText::get()->print("Salut Lume!\n[Powered by boglfw]",
+		GLText::get()->print("Line Racer",
 				{20, 20, ViewportCoord::absolute, ViewportCoord::bottom | ViewportCoord::left},
 				0, 16, glm::vec3(0.2f, 0.4, 1.0f));
 	};
-	// drawList.add(&infoTexts);
+	drawList.add(&infoTexts);
 
 	initialize();
 
