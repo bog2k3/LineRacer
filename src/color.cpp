@@ -41,4 +41,5 @@ namespace Colors {
 	const Color BUTTON_FILL {80, 215, 235};
 	const Color BUTTON_FILL_HOVER {135, 225, 240};
 	const Color BUTTON_FILL_PRESSED {25, 145, 215};
+	const Color BUTTON_TEXT {0, 50, 50};
 };

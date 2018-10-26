@@ -11,8 +11,6 @@ Grid::~Grid() {
 }
 
 void Grid::draw(Viewport*) {
-	//Colors::GRID.set(r);
-
 	float squareSz = size_ * tr_.scale;
 	int nSqX = ceil(winW_ / squareSz);
 	int nSqY = ceil(winH_ / squareSz);
@@ -28,13 +26,13 @@ void Grid::draw(Viewport*) {
 	// draw horizontal lines
 	for (int i=0; i<nSqY; i++) {
 		float y = offsY + i * squareSz;
-		//SDL_RenderDrawLine(r, 0, y, winW_, y);
+		Shape2D::get()->drawLine({0, y}, {winW_, y}, 0, Colors::GRID);
 	}
 
 	// draw vertical lines
 	for (int i=0; i<nSqX; i++) {
 		float x = offsX + i * squareSz;
-		//SDL_RenderDrawLine(r, x, 0, x, winH_);
+		Shape2D::get()->drawLine({x, 0}, {x, winH_}, 0, Colors::GRID);
 	}
 }
 

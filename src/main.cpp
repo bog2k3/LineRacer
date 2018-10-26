@@ -13,6 +13,11 @@
 #include <boglfw/renderOpenGL/glToolkit.h>
 #include <boglfw/renderOpenGL/Renderer.h>
 #include <boglfw/renderOpenGL/Viewport.h>
+#include <boglfw/renderOpenGL/GLText.h>
+#include <boglfw/renderOpenGL/Shape2D.h>
+#include <boglfw/renderOpenGL/ViewportCoord.h>
+#include <boglfw/utils/bitFlags.h>
+
 #include <boglfw/utils/DrawList.h>
 
 #include <SDL2/SDL.h>
@@ -49,12 +54,7 @@ void drawMousePoint(Viewport*) {
 	if (!track.isInDesignMode()) {
 		ScreenPoint p = grid.gridToScreen(mousePoint);
 		int radius = std::max(1.f, 3 * tr.scale);
-		SDL_Rect rc {
-			p.x - radius, p.y - radius,
-			2*radius+1, 2*radius+1
-		};
-		//Colors::MOUSE_POINT.set();
-		//SDL_RenderFillRect(renderer, &rc);
+		Shape2D::get()->drawRectangleFilled({p.x - radius, p.y - radius}, 0, {2*radius+1, 2*radius+1}, Colors::MOUSE_POINT);
 	}
 }
 
@@ -203,9 +203,10 @@ int main() {
 		std::cerr << "Could not initialize OpenGL!: " << SDL_GetError() << "\n";
 		return -1;
 	}
+
 	Renderer boglfwRenderer(windowW, windowH);
 	auto vp = std::make_unique<Viewport>(0, 0, windowW, windowH);
-	auto vp1 = vp.get();
+	vp->setBkColor((glm::vec3)Colors::BACKGROUND);
 	boglfwRenderer.addViewport("main", std::move(vp));
 
 	DrawList drawList;
@@ -217,9 +218,12 @@ int main() {
 	drawList.add(&hctrl);
 	drawList.add(&guiSystem);
 
-	//screenSurf = SDL_GetWindowSurface(window);
-	//SDL_FillRect(screenSurf, NULL, SDL_MapRGB( screenSurf->format, 0xFF, 0xF0, 0xE6 ) );
-	//SDL_UpdateWindowSurface( window );
+	auto infoTexts = [&](Viewport*) {
+		GLText::get()->print("Salut Lume!\n[Powered by boglfw]",
+				{20, 20, ViewportCoord::absolute, ViewportCoord::bottom | ViewportCoord::left},
+				0, 16, glm::vec3(0.2f, 0.4, 1.0f));
+	};
+	// drawList.add(&infoTexts);
 
 	initialize();
 

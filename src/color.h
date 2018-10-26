@@ -1,6 +1,7 @@
 #ifndef __COLOR_H__
 #define __COLOR_H__
 
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
 struct SDL_Renderer;
@@ -13,7 +14,11 @@ struct Color {
 	Color(int r, int g, int b, int a) : r(r), g(g), b(b), a(a) {}
 
 	operator glm::vec4() const {
-		return {r, g, b, a};
+		return {r/255.f, g/255.f, b/255.f, a/255.f};
+	}
+
+	explicit operator glm::vec3() const {
+		return {r/255.f, g/255.f, b/255.f};
 	}
 
 	void set(SDL_Renderer* r) const;
@@ -50,6 +55,7 @@ namespace Colors {
 	extern const Color BUTTON_FILL;
 	extern const Color BUTTON_FILL_HOVER;
 	extern const Color BUTTON_FILL_PRESSED;
+	extern const Color BUTTON_TEXT;
 };
 
 #endif //__COLOR_H__

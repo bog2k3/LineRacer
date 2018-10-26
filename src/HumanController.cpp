@@ -94,7 +94,6 @@ void HumanController::draw(Viewport*) {
 		ScreenPoint to = grid_.gridToScreen(m.p);
 		const int POINT_RADIUS = std::max(1.f, 3 * grid_.getTransform().scale);
 		if (m.isValid) {
-			//SDL_Rect rc{to.x - POINT_RADIUS, to.y - POINT_RADIUS, 2*POINT_RADIUS+1, 2*POINT_RADIUS+1};
 			glm::vec2 pos {to.x - POINT_RADIUS, to.y - POINT_RADIUS};
 			glm::vec2 size {2*POINT_RADIUS+1, 2*POINT_RADIUS+1};
 			if (hasSelectedPoint_ && selectedPoint_ == m.p)
