@@ -37,6 +37,10 @@ else()
 	target_link_libraries(LineRacer PUBLIC pthread GL)
 endif()
 
+# add explicit dependency on boglfw library to force the target to be re-linked when the library is changed.
+# for some reason CMake doesn't do this automatically even though we do depend on the library.
+set_property(TARGET LineRacer PROPERTY LINK_DEPENDS "${BOGLFW_DIST_DIR}/lib/libboglfw.a")
+
 set_property(TARGET LineRacer PROPERTY CXX_STANDARD 14)
 target_compile_options(LineRacer PUBLIC -Wall -std=c++14)
 

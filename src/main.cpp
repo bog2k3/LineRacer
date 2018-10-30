@@ -6,8 +6,6 @@
 #include "Player.h"
 #include "HumanController.h"
 #include "Painter.h"
-#include "GUI/GUISystem.h"
-#include "GUI/Button.h"
 #include "color.h"
 
 #include <boglfw/renderOpenGL/glToolkit.h>
@@ -18,11 +16,16 @@
 #include <boglfw/renderOpenGL/Shape3D.h>
 #include <boglfw/renderOpenGL/ViewportCoord.h>
 #include <boglfw/utils/bitFlags.h>
+#include <boglfw/GUI/GUISystem.h>
+#include <boglfw/GUI/controls/Button.h>
+#include <boglfw/Infrastructure.h>
+#include <boglfw/input/SDLInput.h>
 
 #include <boglfw/utils/DrawList.h>
 
 #include <SDL2/SDL.h>
 #include <asio.hpp>
+#undef MB_RIGHT
 
 #include <iostream>
 #include <algorithm>
@@ -42,7 +45,7 @@ Track track(&grid, &warea, trackResolution);
 Game game(&track, TURN_TIME_LIMIT, 1);
 HumanController hctrl(game, grid);
 
-GUISystem guiSystem;
+GuiSystem guiSystem;
 
 GridPoint mousePoint{0, 0, 0};
 
@@ -59,52 +62,54 @@ void drawMousePoint(Viewport*) {
 	}
 }
 
-void handleKeyEvent(SDL_KeyboardEvent &ev) {
+void handleKeyEvent(InputEvent &ev) {
 	switch (ev.type) {
-	case SDL_KEYDOWN:
-		if (ev.keysym.sym == SDLK_ESCAPE)
+	case InputEvent::EV_KEY_DOWN:
+		if (ev.key == SDLK_ESCAPE)
 			SIGNAL_QUIT = true;
 		break;
-	case SDL_KEYUP:
+	case InputEvent::EV_KEY_UP:
+		break;
+	default:
 		break;
 	}
 }
 
-void handleMouseEvent(SDL_Event &ev) {
+void handleMouseEvent(InputEvent &ev) {
 	static bool isDragging = false;
 	switch (ev.type) {
-	case SDL_MOUSEBUTTONDOWN:
-	case SDL_MOUSEBUTTONUP:
-		if (ev.button.button == 3) {
-			isDragging = ev.button.state == SDL_PRESSED;
-		} else if (ev.button.button == 1) {
+	case InputEvent::EV_MOUSE_DOWN:
+	case InputEvent::EV_MOUSE_UP:
+		if (ev.mouseButton == InputEvent::MB_RIGHT) {
+			isDragging = ev.type == InputEvent::EV_MOUSE_DOWN;
+		} else if (ev.mouseButton == InputEvent::MB_LEFT) {
 			if (track.isInDesignMode()) {
-				WorldPoint wp = ScreenPoint{ev.motion.x, ev.motion.y}.toWorld(tr);
-				track.pointerTouch(ev.button.state == SDL_PRESSED, wp.x, wp.y);
+				WorldPoint wp = ScreenPoint{(int)ev.x, (int)ev.y}.toWorld(tr);
+				track.pointerTouch(ev.type == InputEvent::EV_MOUSE_DOWN, wp.x, wp.y);
 			} else {
-				hctrl.onPointerTouch(ev.button.state == SDL_PRESSED);
+				hctrl.onPointerTouch(ev.type == InputEvent::EV_MOUSE_DOWN);
 			}
 		}
 	break;
-	case SDL_MOUSEMOTION:
+	case InputEvent::EV_MOUSE_MOVED:
 		if (isDragging) {
-			float dx = ev.motion.xrel / tr.scale;
-			float dy = ev.motion.yrel / tr.scale;
+			float dx = ev.dx / tr.scale;
+			float dy = ev.dy / tr.scale;
 			tr.transX += dx;
 			tr.transY += dy;
 			grid.setTransform(tr);
 		} else if (track.isInDesignMode()) {
-			WorldPoint wp = ScreenPoint{ev.motion.x, ev.motion.y}.toWorld(tr);
+			WorldPoint wp = ScreenPoint{(int)ev.x, (int)ev.y}.toWorld(tr);
 			track.pointerMoved(wp.x, wp.y);
 		} else {
-			hctrl.onPointerMoved(grid.screenToGrid({ev.motion.x, ev.motion.y}));
+			hctrl.onPointerMoved(grid.screenToGrid({(int)ev.x, (int)ev.y}));
 		}
-		mousePoint = grid.screenToGrid({ev.motion.x, ev.motion.y});
+		mousePoint = grid.screenToGrid({(int)ev.x, (int)ev.y});
 	break;
-	case SDL_MOUSEWHEEL: {
+	case InputEvent::EV_MOUSE_SCROLL: {
 		// zoom view:
 		float oldScale = tr.scale;
-		tr.scale *= (ev.wheel.y > 0) ? 1.1f : (1.f / 1.1f);
+		tr.scale *= (ev.dz > 0) ? 1.1f : (1.f / 1.1f);
 
 		// now adjust the translation to keep it centered
 		float oldFitW = windowW / oldScale;
@@ -121,23 +126,21 @@ void handleMouseEvent(SDL_Event &ev) {
 	}
 }
 
-void handleSDLEvent(SDL_Event &ev) {
-	switch (ev.type) {
-	case SDL_QUIT:
-		SIGNAL_QUIT = true;
+void handleInputEvent(InputEvent &ev) {
+	if (ev.isConsumed())
 		return;
-	case SDL_KEYDOWN:
-	case SDL_KEYUP:
-		if (guiSystem.handleEvent(ev))
-			return;	// event was consumed by UI
-		handleKeyEvent(ev.key);
+	guiSystem.handleInput(ev);
+	if (ev.isConsumed())
+		return;
+	switch (ev.type) {
+	case InputEvent::EV_KEY_DOWN:
+	case InputEvent::EV_KEY_UP:
+		handleKeyEvent(ev);
 		break;
-	case SDL_MOUSEBUTTONDOWN:
-	case SDL_MOUSEBUTTONUP:
-	case SDL_MOUSEMOTION:
-	case SDL_MOUSEWHEEL:
-		if (guiSystem.handleEvent(ev))
-			return;	// event was consumed by UI
+	case InputEvent::EV_MOUSE_DOWN:
+	case InputEvent::EV_MOUSE_UP:
+	case InputEvent::EV_MOUSE_MOVED:
+	case InputEvent::EV_MOUSE_SCROLL:
 		handleMouseEvent(ev);
 		break;
 	default:
@@ -145,16 +148,19 @@ void handleSDLEvent(SDL_Event &ev) {
 	}
 }
 
-void initialize() {
+void initialize(SDL_Window* window) {
+	// initialize input:
+	SDLInput::initialize(window);
+	SDLInput::onInputEvent.add(&handleInputEvent);
+
 	// initialize logic:
 	game.onTurnAdvance.add([&]() {
 		hctrl.nextTurn();
 	});
 
 	// initialize UI
-	Button* btn = new Button(30, 30, 120, 30);
-	btn->setText("Draw Track");
-	btn->setAction([&](Button* b) {
+	Button* btn = new Button({30, 30}, {120, 30}, "Draw Track");
+	btn->onClick.add([&](Button* b) {
 		if (track.isInDesignMode()) {
 			track.enableDesignMode(false);
 		} else {
@@ -164,9 +170,8 @@ void initialize() {
 	});
 	guiSystem.addElement(std::unique_ptr<Button>(btn));
 
-	btn = new Button(30, 70, 120, 30);
-	btn->setText("Play!");
-	btn->setAction([&](Button *b) {
+	btn = new Button({30, 70}, {120, 30}, "Play!");
+	btn->onClick.add([&](Button *b) {
 		if (track.isReady()) {
 			game.reset();
 			Player *playerOne = new Player(Player::TYPE_HUMAN);	// major memory leak, just for debugging
@@ -226,21 +231,18 @@ int main() {
 	};
 	drawList.add(&infoTexts);
 
-	initialize();
+	initialize(window);
 
-	do {
-		SDL_Event ev;
-		while (SDL_PollEvent(&ev)) {
-			handleSDLEvent(ev);
-		}
+	while (SDLInput::checkInput() && !SIGNAL_QUIT) {
 		update(0.f);
 
 		gltBegin(Colors::BACKGROUND);
 		boglfwRenderer.render(drawList);
 		gltEnd();
-	} while (!SIGNAL_QUIT);
+	}
 
 	boglfwRenderer.unload();
+	Infrastructure::shutDown();
 
 	SDL_DestroyWindow(window);
 

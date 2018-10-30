@@ -31,7 +31,7 @@ public:
 	};
 
 	GameState state() const { return state_; }
-	Player* activePlayer() const { return currentPlayer_ >= 0 && currentPlayer_ < players_.size() ? players_[currentPlayer_].player : nullptr; }
+	Player* activePlayer() const { return currentPlayer_ >= 0 && (unsigned)currentPlayer_ < players_.size() ? players_[currentPlayer_].player : nullptr; }
 
 	bool pathIsFree(Arrow const& a) const; // returns true if the arrow doesn't intersect any player's position
 	bool isPointOnTrack(GridPoint const& p) const; // returns true if the point is within the track limits
