@@ -159,7 +159,7 @@ void initialize(SDL_Window* window) {
 	});
 
 	// initialize UI
-	Button* btn = new Button({30, 30}, {120, 30}, "Draw Track");
+	auto btn = std::make_shared<Button>(glm::vec2{30, 30}, glm::vec2{120, 30}, "Draw Track");
 	btn->onClick.add([&](Button* b) {
 		if (track.isInDesignMode()) {
 			track.enableDesignMode(false);
@@ -168,9 +168,9 @@ void initialize(SDL_Window* window) {
 			track.enableDesignMode(true);
 		}
 	});
-	guiSystem.addElement(std::unique_ptr<Button>(btn));
+	guiSystem.addElement(btn);
 
-	btn = new Button({30, 70}, {120, 30}, "Play!");
+	btn = std::make_shared<Button>(glm::vec2{30, 70}, glm::vec2{120, 30}, "Play!");
 	btn->onClick.add([&](Button *b) {
 		if (track.isReady()) {
 			game.reset();
@@ -181,7 +181,7 @@ void initialize(SDL_Window* window) {
 			game.start();
 		}
 	});
-	guiSystem.addElement(std::unique_ptr<Button>(btn));
+	guiSystem.addElement(btn);
 }
 
 #ifdef __WIN32__
