@@ -16,7 +16,7 @@
 #include <boglfw/renderOpenGL/Shape3D.h>
 #include <boglfw/renderOpenGL/ViewportCoord.h>
 #include <boglfw/utils/bitFlags.h>
-#include <boglfw/GUI/GUISystem.h>
+#include <boglfw/GUI/GuiSystem.h>
 #include <boglfw/GUI/controls/Button.h>
 #include <boglfw/Infrastructure.h>
 #include <boglfw/input/SDLInput.h>
