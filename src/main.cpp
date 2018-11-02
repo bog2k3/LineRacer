@@ -20,8 +20,7 @@
 #include <boglfw/GUI/controls/Button.h>
 #include <boglfw/Infrastructure.h>
 #include <boglfw/input/SDLInput.h>
-
-#include <boglfw/utils/DrawList.h>
+#include <boglfw/utils/drawable.h>
 
 #include <SDL2/SDL.h>
 #include <asio.hpp>
@@ -190,7 +189,6 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 int main() {
 #endif
 	SDL_Window* window = nullptr;
-	SDL_Surface* screenSurf = nullptr;
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		std::cerr << "Could not initialize SDL! SDL_Error: " << SDL_GetError() << "\n";
@@ -213,23 +211,27 @@ int main() {
 	Renderer boglfwRenderer(windowW, windowH);
 	auto vp = std::make_unique<Viewport>(0, 0, windowW, windowH);
 	vp->setBkColor((glm::vec3)Colors::BACKGROUND);
-	boglfwRenderer.addViewport("main", std::move(vp));
 
-	DrawList drawList;
-	drawList.add(&grid);
-	drawList.add(&warea);
-	drawList.add(&track);
-	drawList.add(&game);
-	drawList.add(&drawMousePoint);
-	drawList.add(&hctrl);
-	drawList.add(&guiSystem);
+	std::vector<drawable> drawList {
+		&grid,
+		&warea,
+		&track,
+		&game,
+		&drawMousePoint,
+		&hctrl,
+		&guiSystem,
+	};
 
 	auto infoTexts = [&](Viewport*) {
 		GLText::get()->print("Line Racer",
 				{20, 20, ViewportCoord::absolute, ViewportCoord::bottom | ViewportCoord::left},
 				0, 16, glm::vec3(0.2f, 0.4, 1.0f));
 	};
-	drawList.add(&infoTexts);
+	drawList.push_back(&infoTexts);
+
+	vp->setDrawList(drawList);
+
+	boglfwRenderer.addViewport("main", std::move(vp));
 
 	initialize(window);
 
@@ -237,7 +239,7 @@ int main() {
 		update(0.f);
 
 		gltBegin(Colors::BACKGROUND);
-		boglfwRenderer.render(drawList);
+		boglfwRenderer.render();
 		gltEnd();
 	}
 
