@@ -61,6 +61,32 @@ void drawMousePoint(Viewport*) {
 	}
 }
 
+void drawInfoTexts(Viewport*) {
+	const int fontSz = 16;
+	// draw game status
+	std::string gameStatusText;
+	switch (game.state()) {
+		case Game::STATE_STOPPED:
+			gameStatusText = "Stopped."; break;
+		case Game::STATE_WAITING_PLAYERS:
+			gameStatusText = "Waiting for players..."; break;
+		case Game::STATE_START_SELECTION:
+			gameStatusText = "Selecting start positions..."; break;
+		case Game::STATE_PLAYING:
+			gameStatusText = "Playing."; break;
+	}
+	auto gameStatus = "Game: " + gameStatusText;
+	ViewportCoord gsCoord {50, 5, ViewportCoord::percent, ViewportCoord::top | ViewportCoord::left};
+	auto textSz = GLText::get()->getTextRect(gameStatus, fontSz);
+	gsCoord += {-textSz.x*0.5f, textSz.y*0.5f};
+	GLText::get()->print(gameStatus, gsCoord, 0, fontSz, glm::vec3(0.2f, 0.4, 1.f));
+
+	// draw bottom watermark text
+	GLText::get()->print("Line Racer",
+				{20, 20, ViewportCoord::absolute, ViewportCoord::bottom | ViewportCoord::left},
+				0, fontSz, glm::vec3(0.2f, 0.4, 1.0f));
+}
+
 void handleKeyEvent(InputEvent &ev) {
 	switch (ev.type) {
 	case InputEvent::EV_KEY_DOWN:
@@ -220,15 +246,8 @@ int main() {
 		&drawMousePoint,
 		&hctrl,
 		&guiSystem,
+		&drawInfoTexts,
 	};
-
-	auto infoTexts = [&](Viewport*) {
-		GLText::get()->print("Line Racer",
-				{20, 20, ViewportCoord::absolute, ViewportCoord::bottom | ViewportCoord::left},
-				0, 16, glm::vec3(0.2f, 0.4, 1.0f));
-	};
-	drawList.push_back(&infoTexts);
-
 	vp->setDrawList(drawList);
 
 	boglfwRenderer.addViewport("main", std::move(vp));
