@@ -72,6 +72,8 @@ bool Game::addPlayer(Player* player) {
 		player->setColor(players_.size());
 		player->setOffTrackData({false, {-1, -1}});
 		players_.push_back(PlayerInfo{player});
+		if (players_.size() == track_->getStartPositions().size())	// if all positions are filled, start automatically
+			start();
 		return true;
 	} else
 		return false;

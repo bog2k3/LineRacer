@@ -5,6 +5,7 @@
 #include "Game.h"
 #include "Player.h"
 #include "HumanController.h"
+#include "NetworkController.h"
 #include "Painter.h"
 #include "color.h"
 
@@ -23,7 +24,6 @@
 #include <boglfw/utils/drawable.h>
 
 #include <SDL2/SDL.h>
-#include <asio.hpp>
 #undef MB_RIGHT
 
 #include <iostream>
@@ -43,6 +43,7 @@ WorldArea warea(&grid, {1, 1}, {63, 35});
 Track track(&grid, &warea, trackResolution);
 Game game(&track, TURN_TIME_LIMIT, 1);
 HumanController hctrl(game, grid);
+NetworkController nctrl(game);
 
 GuiSystem guiSystem;
 
@@ -181,6 +182,7 @@ void initialize(SDL_Window* window) {
 	// initialize logic:
 	game.onTurnAdvance.add([&]() {
 		hctrl.nextTurn();
+		nctrl.nextTurn();
 	});
 
 	// initialize UI
@@ -245,6 +247,7 @@ int main() {
 		&game,
 		&drawMousePoint,
 		&hctrl,
+		&nctrl,
 		&guiSystem,
 		&drawInfoTexts,
 	};
