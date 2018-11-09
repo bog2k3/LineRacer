@@ -32,40 +32,43 @@
 const int windowW = 1280;
 const int windowH = 720;
 const int squareSize = 20;
+const float MIN_ZOOM = 0.4f;
+const float MAX_ZOOM = 3.f;
 const float trackResolution = 2.f;
 const float TURN_TIME_LIMIT = 5.f; // seconds
 
 bool SIGNAL_QUIT = false;
 
 Transform tr;
+
 Grid grid(squareSize, windowW, windowH);
-WorldArea warea(&grid, {1, 1}, {63, 35});
-Track track(&grid, &warea, trackResolution);
-Game game(&track, TURN_TIME_LIMIT, 1);
-HumanController hctrl(game, grid);
-NetworkController nctrl(game);
+//WorldArea warea(&grid, {1, 1}, {63, 35});
+//Track track(&grid, &warea, trackResolution);
+//Game game(&track, TURN_TIME_LIMIT, 1);
+//HumanController hctrl(game, grid);
+//NetworkController nctrl(game);
 
 GuiSystem guiSystem;
 
 GridPoint mousePoint{0, 0, 0};
 
 void update(float dt) {
-	game.update(dt);
+	//game.update(dt);
 }
 
 void drawMousePoint(Viewport*) {
 	// draw grid point closest to mouse:
-	if (!track.isInDesignMode()) {
+	/*if (!track.isInDesignMode()) {
 		ScreenPoint p = grid.gridToScreen(mousePoint);
 		int radius = std::max(1.f, 3 * tr.scale);
 		Shape2D::get()->drawRectangleFilled({p.x - radius, p.y - radius}, 0, {2*radius+1, 2*radius+1}, Colors::MOUSE_POINT);
-	}
+	}*/
 }
 
 void drawInfoTexts(Viewport*) {
 	const int fontSz = 16;
 	// draw game status
-	std::string gameStatusText;
+	/*std::string gameStatusText;
 	switch (game.state()) {
 		case Game::STATE_STOPPED:
 			gameStatusText = "Stopped."; break;
@@ -80,7 +83,7 @@ void drawInfoTexts(Viewport*) {
 	ViewportCoord gsCoord {50, 5, ViewportCoord::percent, ViewportCoord::top | ViewportCoord::left};
 	auto textSz = GLText::get()->getTextRect(gameStatus, fontSz);
 	gsCoord += {-textSz.x*0.5f, textSz.y*0.5f};
-	GLText::get()->print(gameStatus, gsCoord, 0, fontSz, glm::vec3(0.2f, 0.4, 1.f));
+	GLText::get()->print(gameStatus, gsCoord, 0, fontSz, glm::vec3(0.2f, 0.4, 1.f));*/
 
 	// draw bottom watermark text
 	GLText::get()->print("Line Racer",
@@ -109,12 +112,12 @@ void handleMouseEvent(InputEvent &ev) {
 		if (ev.mouseButton == InputEvent::MB_RIGHT) {
 			isDragging = ev.type == InputEvent::EV_MOUSE_DOWN;
 		} else if (ev.mouseButton == InputEvent::MB_LEFT) {
-			if (track.isInDesignMode()) {
+			/*if (track.isInDesignMode()) {
 				WorldPoint wp = ScreenPoint{(int)ev.x, (int)ev.y}.toWorld(tr);
 				track.pointerTouch(ev.type == InputEvent::EV_MOUSE_DOWN, wp.x, wp.y);
 			} else {
 				hctrl.onPointerTouch(ev.type == InputEvent::EV_MOUSE_DOWN);
-			}
+			}*/
 		}
 	break;
 	case InputEvent::EV_MOUSE_MOVED:
@@ -124,18 +127,19 @@ void handleMouseEvent(InputEvent &ev) {
 			tr.transX += dx;
 			tr.transY += dy;
 			grid.setTransform(tr);
-		} else if (track.isInDesignMode()) {
+		} /*else if (track.isInDesignMode()) {
 			WorldPoint wp = ScreenPoint{(int)ev.x, (int)ev.y}.toWorld(tr);
 			track.pointerMoved(wp.x, wp.y);
 		} else {
 			hctrl.onPointerMoved(grid.screenToGrid({(int)ev.x, (int)ev.y}));
-		}
+		}*/
 		mousePoint = grid.screenToGrid({(int)ev.x, (int)ev.y});
 	break;
 	case InputEvent::EV_MOUSE_SCROLL: {
 		// zoom view:
 		float oldScale = tr.scale;
-		tr.scale *= (ev.dz > 0) ? 1.1f : (1.f / 1.1f);
+		if ((ev.dz > 0 && tr.scale < MAX_ZOOM) || (ev.dz < 0 && tr.scale > MIN_ZOOM))
+			tr.scale *= (ev.dz > 0) ? 1.1f : (1.f / 1.1f);
 
 		// now adjust the translation to keep it centered
 		float oldFitW = windowW / oldScale;
@@ -180,13 +184,13 @@ void initialize(SDL_Window* window) {
 	SDLInput::onInputEvent.add(&handleInputEvent);
 
 	// initialize logic:
-	game.onTurnAdvance.add([&]() {
+	/*game.onTurnAdvance.add([&]() {
 		hctrl.nextTurn();
 		nctrl.nextTurn();
-	});
+	});*/
 
 	// initialize UI
-	auto btn = std::make_shared<Button>(glm::vec2{30, 30}, glm::vec2{120, 30}, "Draw Track");
+	/*auto btn = std::make_shared<Button>(glm::vec2{30, 30}, glm::vec2{120, 30}, "Draw Track");
 	btn->onClick.add([&](Button* b) {
 		if (track.isInDesignMode()) {
 			track.enableDesignMode(false);
@@ -208,10 +212,12 @@ void initialize(SDL_Window* window) {
 			game.start();
 		}
 	});
-	guiSystem.addElement(btn);
+	guiSystem.addElement(btn);*/
 }
 
 #ifdef __WIN32__
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
 #else
 int main() {
@@ -242,12 +248,12 @@ int main() {
 
 	std::vector<drawable> drawList {
 		&grid,
-		&warea,
-		&track,
-		&game,
+		//&warea,
+		//&track,
+		//&game,
 		&drawMousePoint,
-		&hctrl,
-		&nctrl,
+		//&hctrl,
+		//&nctrl,
 		&guiSystem,
 		&drawInfoTexts,
 	};
