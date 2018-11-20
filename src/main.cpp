@@ -8,6 +8,7 @@
 #include "NetworkController.h"
 #include "Painter.h"
 #include "color.h"
+#include "GUI/MainMenu.h"
 
 #include <boglfw/renderOpenGL/glToolkit.h>
 #include <boglfw/renderOpenGL/Renderer.h>
@@ -18,7 +19,6 @@
 #include <boglfw/renderOpenGL/ViewportCoord.h>
 #include <boglfw/utils/bitFlags.h>
 #include <boglfw/GUI/GuiSystem.h>
-#include <boglfw/GUI/controls/Button.h>
 #include <boglfw/Infrastructure.h>
 #include <boglfw/input/SDLInput.h>
 #include <boglfw/utils/drawable.h>
@@ -47,7 +47,8 @@ Grid grid(squareSize, windowW, windowH);
 //Game game(&track, TURN_TIME_LIMIT, 1);
 //HumanController hctrl(game, grid);
 //NetworkController nctrl(game);
-
+std::shared_ptr<MainMenu> mainMenu;
+std::shared_ptr<GuiContainerElement> pActiveMenu;
 GuiSystem guiSystem;
 
 GridPoint mousePoint{0, 0, 0};
@@ -178,6 +179,18 @@ void handleInputEvent(InputEvent &ev) {
 	}
 }
 
+void singlePlayer() {
+
+}
+
+void joinMultiplayer() {
+
+}
+
+void hostMultiplayer() {
+
+}
+
 void initialize(SDL_Window* window) {
 	// initialize input:
 	SDLInput::initialize(window);
@@ -190,6 +203,18 @@ void initialize(SDL_Window* window) {
 	});*/
 
 	// initialize UI
+	int wW, wH;
+	SDL_GetWindowSize(window, &wW, &wH);
+	glm::vec2 screenSize{wW, wH};
+	mainMenu = std::make_shared<MainMenu>(screenSize);
+	mainMenu->hide();
+	guiSystem.addElement(mainMenu);
+	mainMenu->onExit.add([&] {
+		SIGNAL_QUIT = true;
+	});
+	mainMenu->onSinglePlayer.add(singlePlayer);
+	mainMenu->onJoinMulti.add(joinMultiplayer);
+	mainMenu->onHostMulti.add(hostMultiplayer);
 	/*auto btn = std::make_shared<Button>(glm::vec2{30, 30}, glm::vec2{120, 30}, "Draw Track");
 	btn->onClick.add([&](Button* b) {
 		if (track.isInDesignMode()) {
@@ -213,6 +238,14 @@ void initialize(SDL_Window* window) {
 		}
 	});
 	guiSystem.addElement(btn);*/
+}
+
+void switchMenu(std::shared_ptr<GuiContainerElement> const& pM) {
+	if (pActiveMenu)
+		pActiveMenu->hide();
+	if (pM)
+		pM->show();
+	pActiveMenu = pM;
 }
 
 #ifdef __WIN32__
@@ -262,6 +295,7 @@ int main() {
 	boglfwRenderer.addViewport("main", std::move(vp));
 
 	initialize(window);
+	switchMenu(mainMenu);
 
 	while (SDLInput::checkInput() && !SIGNAL_QUIT) {
 		update(0.f);
