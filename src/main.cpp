@@ -257,7 +257,7 @@ int main() {
 #endif
 	SDL_Window* window = nullptr;
 
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+	if (SDL_Init(SDL_INIT_EVENTS) < 0) {
 		std::cerr << "Could not initialize SDL! SDL_Error: " << SDL_GetError() << "\n";
 		return -1;
 	}
