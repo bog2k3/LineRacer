@@ -1,11 +1,9 @@
 #pragma once
 
-#include <boglfw/GUI/GuiContainerElement.h>
+#include "VerticalMenu.h"
 #include <boglfw/utils/Event.h>
 
-#include <memory>
-
-class MainMenu : public GuiContainerElement {
+class MainMenu : public VerticalMenu {
 public:
 	MainMenu(glm::vec2 size);
 	~MainMenu() override {}

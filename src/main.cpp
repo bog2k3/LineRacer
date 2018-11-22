@@ -9,6 +9,9 @@
 #include "Painter.h"
 #include "color.h"
 #include "GUI/MainMenu.h"
+#include "GUI/SinglePlayerMenu.h"
+#include "GUI/JoinMultiPlayerMenu.h"
+#include "GUI/HostMultiPlayerMenu.h"
 
 #include <boglfw/renderOpenGL/glToolkit.h>
 #include <boglfw/renderOpenGL/Renderer.h>
@@ -48,10 +51,15 @@ Grid grid(squareSize, windowW, windowH);
 //HumanController hctrl(game, grid);
 //NetworkController nctrl(game);
 std::shared_ptr<MainMenu> mainMenu;
+std::shared_ptr<SinglePlayerMenu> singlePlayerMenu;
+std::shared_ptr<JoinMultiPlayerMenu> joinMultiPlayerMenu;
+std::shared_ptr<HostMultiPlayerMenu> hostMultiPlayerMenu;
 std::shared_ptr<GuiContainerElement> pActiveMenu;
 GuiSystem guiSystem;
 
 GridPoint mousePoint{0, 0, 0};
+
+void switchMenu(std::shared_ptr<GuiContainerElement> const& pM);
 
 void update(float dt) {
 	//game.update(dt);
@@ -179,10 +187,6 @@ void handleInputEvent(InputEvent &ev) {
 	}
 }
 
-void singlePlayer() {
-
-}
-
 void joinMultiplayer() {
 
 }
@@ -212,9 +216,23 @@ void initialize(SDL_Window* window) {
 	mainMenu->onExit.add([&] {
 		SIGNAL_QUIT = true;
 	});
-	mainMenu->onSinglePlayer.add(singlePlayer);
+	mainMenu->onSinglePlayer.add([&] {
+		switchMenu(singlePlayerMenu);
+	});
 	mainMenu->onJoinMulti.add(joinMultiplayer);
 	mainMenu->onHostMulti.add(hostMultiplayer);
+
+	singlePlayerMenu = std::make_shared<SinglePlayerMenu>(screenSize);
+	singlePlayerMenu->hide();
+	guiSystem.addElement(singlePlayerMenu);
+
+	joinMultiPlayerMenu = std::make_shared<JoinMultiPlayerMenu>(screenSize);
+	joinMultiPlayerMenu->hide();
+	guiSystem.addElement(joinMultiPlayerMenu);
+
+	hostMultiPlayerMenu = std::make_shared<HostMultiPlayerMenu>(screenSize);
+	hostMultiPlayerMenu->hide();
+	guiSystem.addElement(hostMultiPlayerMenu);
 	/*auto btn = std::make_shared<Button>(glm::vec2{30, 30}, glm::vec2{120, 30}, "Draw Track");
 	btn->onClick.add([&](Button* b) {
 		if (track.isInDesignMode()) {
