@@ -2,7 +2,7 @@
 #define __GAME_H__
 
 #include "transform.h"
-#include "event.h"
+#include <boglfw/utils/Event.h>
 
 #include <vector>
 

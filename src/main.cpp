@@ -12,7 +12,6 @@
 #include "GUI/SinglePlayerMenu.h"
 #include "GUI/JoinMultiPlayerMenu.h"
 #include "GUI/HostMultiPlayerMenu.h"
-
 #include <boglfw/renderOpenGL/glToolkit.h>
 #include <boglfw/renderOpenGL/Renderer.h>
 #include <boglfw/renderOpenGL/Viewport.h>
