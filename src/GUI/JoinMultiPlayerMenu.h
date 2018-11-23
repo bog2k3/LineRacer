@@ -10,7 +10,6 @@ public:
 	JoinMultiPlayerMenu(glm::vec2 size);
 	~JoinMultiPlayerMenu() override {}
 
-	// Event<void()> onSinglePlayer;
 	Event<void()> onBack;
 private:
 };

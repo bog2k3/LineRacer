@@ -1,7 +1,5 @@
 #include "MainMenu.h"
 
-#include <boglfw/GUI/controls/Button.h>
-
 MainMenu::MainMenu(glm::vec2 size)
 	: VerticalMenu(size)
 {

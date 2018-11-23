@@ -218,8 +218,12 @@ void initialize(SDL_Window* window) {
 	mainMenu->onSinglePlayer.add([&] {
 		switchMenu(singlePlayerMenu);
 	});
-	mainMenu->onJoinMulti.add(joinMultiplayer);
-	mainMenu->onHostMulti.add(hostMultiplayer);
+	mainMenu->onJoinMulti.add([&] {
+		switchMenu(joinMultiPlayerMenu);
+	});
+	mainMenu->onHostMulti.add([&] {
+		switchMenu(hostMultiPlayerMenu);
+	});
 
 	singlePlayerMenu = std::make_shared<SinglePlayerMenu>(screenSize);
 	singlePlayerMenu->hide();
