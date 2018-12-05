@@ -30,11 +30,11 @@ file(GLOB_RECURSE sources 	src/*.cpp)
 add_executable(LineRacer ${sources})
 
 #add libraries
-target_link_libraries(LineRacer PUBLIC boglfw SDL2 GLEW glfw3 png)
+target_link_libraries(LineRacer PUBLIC boglfw SDL2 GLEW png)
 if (WIN32)
-	target_link_libraries(LineRacer PUBLIC ws2_32 opengl32)
+	target_link_libraries(LineRacer PUBLIC glfw3 ws2_32 opengl32)
 else()
-	target_link_libraries(LineRacer PUBLIC pthread GL)
+	target_link_libraries(LineRacer PUBLIC glfw pthread GL)
 endif()
 
 # add explicit dependency on boglfw library to force the target to be re-linked when the library is changed.
