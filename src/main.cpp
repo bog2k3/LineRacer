@@ -227,14 +227,23 @@ void initialize(SDL_Window* window) {
 
 	singlePlayerMenu = std::make_shared<SinglePlayerMenu>(screenSize);
 	singlePlayerMenu->hide();
+	singlePlayerMenu->onBack.add([&] {
+		switchMenu(mainMenu);
+	});
 	guiSystem.addElement(singlePlayerMenu);
 
 	joinMultiPlayerMenu = std::make_shared<JoinMultiPlayerMenu>(screenSize);
 	joinMultiPlayerMenu->hide();
+	joinMultiPlayerMenu->onBack.add([&] {
+		switchMenu(mainMenu);
+	});
 	guiSystem.addElement(joinMultiPlayerMenu);
 
 	hostMultiPlayerMenu = std::make_shared<HostMultiPlayerMenu>(screenSize);
 	hostMultiPlayerMenu->hide();
+	hostMultiPlayerMenu->onBack.add([&] {
+		switchMenu(mainMenu);
+	});
 	guiSystem.addElement(hostMultiPlayerMenu);
 	/*auto btn = std::make_shared<Button>(glm::vec2{30, 30}, glm::vec2{120, 30}, "Draw Track");
 	btn->onClick.add([&](Button* b) {
