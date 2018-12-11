@@ -278,13 +278,24 @@ void switchMenu(std::shared_ptr<GuiContainerElement> const& pM) {
 	pActiveMenu = pM;
 }
 
+extern void testNet(int argc, char** argv);
+#define TEST_NET
+
 #ifdef __WIN32__
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
+	auto argc = __argc;
+	auto argv = __argv;
 #else
-int main() {
+int main(int argc, char** argv) {
 #endif
+
+#ifdef TEST_NET
+	testNet(argc, argv);
+	return 0;
+#endif
+
 	SDL_Window* window = nullptr;
 
 	if (SDL_Init(SDL_INIT_EVENTS) < 0) {
