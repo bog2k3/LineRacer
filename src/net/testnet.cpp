@@ -47,10 +47,10 @@ void runChat(net::connection con, bool first) {
 		if (myTurn) {
 			std::string line;
 			std::cin >> line;
-			size_t len = line.size();
+			size_t len = line.size()+1;
 			auto err = net::write(con, &len, sizeof(len));
 			if (err == net::result::ok)
-				err = net::write(con, line.c_str(), len+1);
+				err = net::write(con, line.c_str(), len);
 			if (err != net::result::ok)
 				std::cout << "FAILED to send message: " << errMsg(err) << "\n";
 		} else {
@@ -65,7 +65,7 @@ void runChat(net::connection con, bool first) {
 					if (err != net::result::ok) {
 						std::cout << "FAILED to receive message: " << errMsg(err) << "\n";
 					} else {
-						buf[chunkSize+1] = 0;
+						buf[chunkSize] = 0;
 						std::cout << buf;
 						recv += chunkSize;
 					}
@@ -89,6 +89,7 @@ void testHost(int port) {
 			std::cout << "Incomming connection failed: " << errMsg(res) << "\n";
 		} else {
 			net::stopListen(listener);
+			std::cout << "Client connected. Waiting for him to say hi...\n";
 			clientConnected.notify();
 		}
 	});
