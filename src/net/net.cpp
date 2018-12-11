@@ -1,13 +1,14 @@
 #include "connection.h"
 #include "listener.h"
 
+#include <boglfw/utils/semaphore.h>
+
 #include <asio.hpp>
 
 #include <vector>
 #include <mutex>
 #include <thread>
 #include <atomic>
-#include <condition_variable>
 
 namespace net {
 
@@ -16,8 +17,8 @@ using asio::ip::tcp;
 static asio::io_context theIoContext;
 static std::vector<tcp::socket*> connections;
 static std::vector<tcp::acceptor*> listeners;
-static std::condition_variable workAvail;
-static std::mutex asyncOpMutex;					// used to synchronize the changes to io_context run thread's state with operations that create or destroy
+static semaphore workAvail;
+static std::mutex asyncOpMutex;		// used to synchronize the changes to io_context run thread's state with operations that create or destroy
 												// async objects such as connections and listeners
 
 static void checkStart();	// checks if a worker thread is running and if not it starts one for all async operations
@@ -30,13 +31,15 @@ static tcp::socket* getSocket(connection con) {
 	return connections[con];
 }
 
-result startListenImpl(tcp::acceptor* acceptor, newConnectionCallback callback) {
+void startListenImpl(tcp::acceptor* acceptor, newConnectionCallback callback) {
 	tcp::socket* clientSocket = new tcp::socket(theIoContext);
 	acceptor->async_accept(*clientSocket, [acceptor, clientSocket, callback](const asio::error_code& error) {
-		std::lock_guard<std::mutex> lk(asyncOpMutex);
 		if (!error) {
+			std::unique_lock<std::mutex> lk(asyncOpMutex);
 			connections.push_back(clientSocket);
-			callback(result::ok, connections.size() - 1);
+			auto connectionId = connections.size() - 1;
+			lk.unlock();
+			callback(result::ok, connectionId);
 		} else {
 			delete clientSocket;
 			callback(translateError(error), -1u);
@@ -47,16 +50,15 @@ result startListenImpl(tcp::acceptor* acceptor, newConnectionCallback callback) 
 		else
 			delete acceptor;
 	});
-	checkStart();
-	workAvail.notify_one();
-	return result::ok;
+	workAvail.notify();
 }
 
-result startListen(uint16_t port, listener &outLis, newConnectionCallback callback) {
-	std::lock_guard<std::mutex> lk(asyncOpMutex);
+void startListen(uint16_t port, listener &outLis, newConnectionCallback callback) {
 	tcp::acceptor* acceptor = new tcp::acceptor(theIoContext, tcp::endpoint(tcp::v4(), port));
+	std::lock_guard<std::mutex> lk(asyncOpMutex);
 	listeners.push_back(acceptor);
-	return startListenImpl(acceptor, callback);
+	startListenImpl(acceptor, callback);
+	checkStart();
 }
 
 void stopListen(listener lis) {
@@ -94,19 +96,21 @@ void connect_async(std::string host, uint16_t port, newConnectionCallback callba
 			tcp::socket* newSocket = new tcp::socket(theIoContext);
 			asio::async_connect(*newSocket, endpointIter, [newSocket, callback] (const asio::error_code &err, tcp::resolver::iterator endpointIter) {
 				if (!err) {
-					std::lock_guard<std::mutex> lk(asyncOpMutex);
+					std::unique_lock<std::mutex> lk(asyncOpMutex);
 					connections.push_back(newSocket);
-					callback(result::ok, connections.size()-1);
+					auto connectionId = connections.size() - 1;
+					lk.unlock();
+					callback(result::ok, connectionId);
 				} else {
 					callback(translateError(err), -1u);
 				}
 			});
-			checkStart();
-			workAvail.notify_one();
+			workAvail.notify();
 		}
 	});
+	std::lock_guard<std::mutex> lk(asyncOpMutex);
 	checkStart();
-	workAvail.notify_one();
+	workAvail.notify();
 }
 
 void closeConnection(connection con) {
@@ -143,10 +147,8 @@ static std::atomic<bool> signalContextThreadExit { false };
 std::thread contextThread;
 
 static void ioContextThread() {
-	std::mutex condMtx;
 	while(!signalContextThreadExit.load(std::memory_order_acquire)) {
-		std::unique_lock<std::mutex> condLk(condMtx);
-		workAvail.wait(condLk);
+		workAvail.wait();
 		if (signalContextThreadExit.load(std::memory_order_acquire))
 			break;
 
@@ -161,10 +163,8 @@ static void ioContextThread() {
 static void checkStart() {
 	// we are currently under asyncOpMutex lock by the caller
 	if (!isContextThreadRunning.load(std::memory_order_acquire)) {
-		if (!isContextThreadRunning.load(std::memory_order_acquire)) {
-			isContextThreadRunning.store(true, std::memory_order_release);
-			contextThread = std::thread(&ioContextThread);
-		}
+		isContextThreadRunning.store(true, std::memory_order_release);
+		contextThread = std::thread(&ioContextThread);
 	}
 }
 
@@ -180,7 +180,7 @@ static void checkFinish() {
 	if (nObjects == 0)
 	{
 		signalContextThreadExit.store(true, std::memory_order_release);
-		workAvail.notify_one();
+		workAvail.notify();
 	}
 }
 

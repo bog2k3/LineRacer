@@ -1,8 +1,8 @@
 #include "listener.h"
 #include "connection.h"
 
-#include <mutex>
-#include <condition_variable>
+#include <boglfw/utils/semaphore.h>
+
 #include <stdexcept>
 #include <cstring>
 #include <iostream>
@@ -80,7 +80,27 @@ void runChat(net::connection con, bool first) {
 }
 
 void testHost(int port) {
-
+	std::cout << "Start listening on port " << port << "...\n";
+	net::listener listener;
+	semaphore clientConnected;
+	net::connection clientCon;
+	net::startListen((uint16_t)port, listener, [&] (net::result res, net::connection con) {
+		if (res != net::result::ok) {
+			std::cout << "Incomming connection failed: " << errMsg(res) << "\n";
+		} else {
+			net::stopListen(listener);
+			clientConnected.notify();
+		}
+	});
+//	if (err != net::result::ok) {
+//		std::cout << "Failed to open port: " << errMsg(err) << "\n";
+//		return;
+//	}
+	clientConnected.wait();
+	runChat(clientCon, false);
+	std::cout << "closing connection...\n";
+	net::closeConnection(clientCon);
+	std::cout << "Connection closed. EXITING.\n";
 }
 
 void testClient(char* host, int port) {
