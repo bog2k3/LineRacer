@@ -72,7 +72,7 @@ result connect(std::string host, uint16_t port, connection& outCon) {
     tcp::resolver::results_type endpoints = resolver.resolve(host, std::to_string(port));
     tcp::socket* newSocket = new tcp::socket(theIoContext);
 	asio::error_code err;
-    auto it = asio::connect(*newSocket, endpoints, err);
+    asio::connect(*newSocket, endpoints, err);
 	if (!err) {
 		std::lock_guard<std::mutex> lk(asyncOpMutex);
 		connections.push_back(newSocket);
@@ -187,8 +187,35 @@ static void checkFinish() {
 static result translateError(const asio::error_code &err) {
 	if (!err)
 		return result::ok;
-	else
-	 	return result::err_unknown;
+	else {
+		result::result_code code = result::ok;
+		switch(err.value()) {
+			case asio::error::address_in_use:
+				code = result::err_portInUse;
+				break;
+			case asio::error::connection_refused:
+				code = result::err_refused;
+				break;
+			case asio::error::connection_aborted:
+				code = result::err_aborted;
+				break;
+			case asio::error::connection_reset:
+				code = result::err_aborted;
+				break;
+			case asio::error::host_not_found:
+				code = result::err_unreachable;
+				break;
+			case asio::error::host_unreachable:
+				code = result::err_unreachable;
+				break;
+			case asio::error::timed_out:
+				code = result::err_timeout;
+				break;
+			default:
+				code = result::err_unknown;
+		}
+		return {code, err.message()};
+	}
 }
 
 } // namespace

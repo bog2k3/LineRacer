@@ -24,15 +24,21 @@ void testNet(int argc, char** argv) {
 		throw std::runtime_error("wrong args");
 }
 
-std::string errName(net::result err) {
-	switch (err) {
+std::string errName(net::result const& err) {
+	switch (err.code) {
 		case net::result::ok: return "OK";
 		case net::result::err_timeout: return "timeout";
 		case net::result::err_aborted: return "aborted";
 		case net::result::err_refused: return "refused";
+		case net::result::err_portInUse: return "port is in use";
+		case net::result::err_unreachable: return "host cannot be resolved or is unreachable";
 		case net::result::err_unknown: return "unknown";
 		default: throw std::runtime_error("value not handled");
 	}
+}
+
+std::string errMsg(net::result const& err) {
+	return errName(err) + " (" + err.message + ")";
 }
 
 void runChat(net::connection con, bool first) {
@@ -46,7 +52,7 @@ void runChat(net::connection con, bool first) {
 			if (err == net::result::ok)
 				err = net::write(con, line.c_str(), len+1);
 			if (err != net::result::ok)
-				std::cout << "FAILED to send message: " << errName(err) << "\n";
+				std::cout << "FAILED to send message: " << errMsg(err) << "\n";
 		} else {
 			char buf[1024];
 			size_t len;
@@ -57,7 +63,7 @@ void runChat(net::connection con, bool first) {
 					size_t chunkSize = std::min(sizeof(buf)-1, len-recv);
 					err = net::read(con, buf, sizeof(buf), chunkSize);
 					if (err != net::result::ok) {
-						std::cout << "FAILED to receive message: " << errName(err) << "\n";
+						std::cout << "FAILED to receive message: " << errMsg(err) << "\n";
 					} else {
 						buf[chunkSize+1] = 0;
 						std::cout << buf;
@@ -66,7 +72,7 @@ void runChat(net::connection con, bool first) {
 				}
 				std::cout << "\n";
 			} else {
-				std::cout << "FAILED to receive message: " << errName(err) << "\n";
+				std::cout << "FAILED to receive message: " << errMsg(err) << "\n";
 			}
 		}
 		myTurn = !myTurn;
@@ -82,7 +88,7 @@ void testClient(char* host, int port) {
 	net::connection con;
 	auto res = net::connect(host, port, con);
 	if (res != net::result::ok) {
-		std::cout << "FAILED to connect: " << errName(res) << "\n";
+		std::cout << "FAILED to connect: " << errMsg(res) << "\n";
 		return;
 	} else {
 		std::cout << "CONNECTED. Say hello!\n";
