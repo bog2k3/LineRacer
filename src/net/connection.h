@@ -34,4 +34,8 @@ result write(connection con, const void* buffer, size_t count);
 // the call is blocking.
 result read(connection con, void* buffer, size_t bufSize, size_t count);
 
+// Cancels all on-going read/write operations on a connection.
+// You can use this for example in case of a timeout
+void cancelOperations(connection con);
+
 }

@@ -24,6 +24,12 @@ static void checkStart();	// checks if a worker thread is running and if not it 
 static void checkFinish();	// checks if all connections and listeners are closed and if so, shuts down the worker thread
 static result translateError(const asio::error_code &err);
 
+static tcp::socket* getSocket(connection con) {
+	assert(con < connections.size() && connections[con] != nullptr);
+	std::lock_guard<std::mutex> lk(asyncOpMutex);
+	return connections[con];
+}
+
 result startListenImpl(tcp::acceptor* acceptor, newConnectionCallback callback) {
 	tcp::socket* clientSocket = new tcp::socket(theIoContext);
 	acceptor->async_accept(*clientSocket, [acceptor, clientSocket, callback](const asio::error_code& error) {
@@ -105,18 +111,31 @@ void connect_async(std::string host, uint16_t port, newConnectionCallback callba
 
 void closeConnection(connection con) {
 	std::lock_guard<std::mutex> lk(asyncOpMutex);
-	//...
+	assert(con < connections.size() && connections[con] != nullptr);
+	connections[con]->close();
+	delete connections[con];
+	connections[con] = nullptr;
 	checkFinish();
 }
 
 result write(connection con, const void* buffer, size_t count) {
-	// ...
-	workAvail.notify_one();
+	auto socket = getSocket(con);
+	asio::error_code err;
+	asio::write(*socket, asio::buffer(buffer, count), err);
+	return translateError(err);
 }
 
 result read(connection con, void* buffer, size_t bufSize, size_t count) {
-	// ...
-	workAvail.notify_one();
+	assert(count <= bufSize);
+	auto socket = getSocket(con);
+	asio::error_code err;
+	asio::read(*socket, asio::buffer(buffer, count), err);
+	return translateError(err);
+}
+
+void cancelOperations(connection con) {
+	auto socket = getSocket(con);
+	socket->cancel();
 }
 
 static std::atomic<bool> isContextThreadRunning { false };
@@ -124,10 +143,6 @@ static std::atomic<bool> signalContextThreadExit { false };
 std::thread contextThread;
 
 static void ioContextThread() {
-	//std::unique_lock<std::mutex> lk;
-	// std::lock_guard<std::mutex> stateLk(contextThreadStateMtx);
-	// the lock is acquired as soon as checkStart finishes its initialization
-
 	std::mutex condMtx;
 	while(!signalContextThreadExit.load(std::memory_order_acquire)) {
 		std::unique_lock<std::mutex> condLk(condMtx);
