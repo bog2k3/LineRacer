@@ -16,13 +16,15 @@ using asio::ip::tcp;
 
 static asio::io_context theIoContext;
 static std::vector<tcp::socket*> connections;
+static std::vector<tcp::socket*> connectionsToDelete;
 static std::vector<tcp::acceptor*> listeners;
+static std::vector<tcp::acceptor*> listenersToDelete;
 static semaphore workAvail;
 static std::mutex asyncOpMutex;		// used to synchronize the changes to io_context run thread's state with operations that create or destroy
 												// async objects such as connections and listeners
 
 static void checkStart();	// checks if a worker thread is running and if not it starts one for all async operations
-static void checkFinish();	// checks if all connections and listeners are closed and if so, shuts down the worker thread
+static void checkFinish(std::unique_lock<std::mutex> &lk);	// checks if all connections and listeners are closed and if so, shuts down the worker thread
 static result translateError(const asio::error_code &err);
 
 static tcp::socket* getSocket(connection con) {
@@ -47,8 +49,6 @@ void startListenImpl(tcp::acceptor* acceptor, newConnectionCallback callback) {
 		// recurse to continue listening for new clients:
 		if (acceptor->is_open())	// (only if the operation wasn't canceled meanwhile)
 			startListenImpl(acceptor, callback);
-		else
-			delete acceptor;
 	});
 	workAvail.notify();
 }
@@ -62,11 +62,13 @@ void startListen(uint16_t port, listener &outLis, newConnectionCallback callback
 }
 
 void stopListen(listener lis) {
-	std::lock_guard<std::mutex> lk(asyncOpMutex);
+	std::unique_lock<std::mutex> lk(asyncOpMutex);
 	assert(lis < listeners.size() && listeners[lis] != nullptr);
+	listeners[lis]->cancel();
 	listeners[lis]->close();
+	listenersToDelete.push_back(listeners[lis]);
 	listeners[lis] = nullptr;
-	checkFinish();
+	checkFinish(lk);
 }
 
 result connect(std::string host, uint16_t port, connection& outCon) {
@@ -114,12 +116,13 @@ void connect_async(std::string host, uint16_t port, newConnectionCallback callba
 }
 
 void closeConnection(connection con) {
-	std::lock_guard<std::mutex> lk(asyncOpMutex);
+	std::unique_lock<std::mutex> lk(asyncOpMutex);
 	assert(con < connections.size() && connections[con] != nullptr);
+	connections[con]->shutdown(tcp::socket::shutdown_both);
 	connections[con]->close();
-	delete connections[con];
+	connectionsToDelete.push_back(connections[con]);
 	connections[con] = nullptr;
-	checkFinish();
+	checkFinish(lk);
 }
 
 result write(connection con, const void* buffer, size_t count) {
@@ -156,7 +159,6 @@ static void ioContextThread() {
 		theIoContext.run();
 		theIoContext.restart();
 	}
-	isContextThreadRunning.store(false, std::memory_order_release);
 }
 
 
@@ -168,7 +170,7 @@ static void checkStart() {
 	}
 }
 
-static void checkFinish() {
+static void checkFinish(std::unique_lock<std::mutex> &lk) {
 	// we are currently under asyncOpMutex lock by the caller
 	// count how many live connections/listeners we have:
 	unsigned nObjects = 0;
@@ -181,6 +183,25 @@ static void checkFinish() {
 	{
 		signalContextThreadExit.store(true, std::memory_order_release);
 		workAvail.notify();
+		lk.unlock();
+		contextThread.join();
+		lk.lock();
+		// signal the thread is done
+		isContextThreadRunning.store(false, std::memory_order_release);
+
+		// delete any connections that are done
+		for (auto c : connectionsToDelete)
+			delete c;
+		connectionsToDelete.clear();
+
+		// delete any listeners that are done
+		for (auto l : listenersToDelete)
+			delete l;
+		listenersToDelete.clear();
+
+		// some async operations may have been queued during the time we waited in the .join()
+		// but they didn't have a chance to start the thread because isContextThreadRunning wasn't reset until we re-acquired the lock
+		checkStart();
 	}
 }
 

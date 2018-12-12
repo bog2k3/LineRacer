@@ -11,17 +11,21 @@ void testHost(int port);
 void testClient(char* host, int port);
 
 void testNet(int argc, char** argv) {
-	if (argc < 3)
-		throw std::runtime_error("wrong args");
-	if (!strcmp(argv[1], "host"))
-		testHost(atoi(argv[2]));
-	else if (!strcmp(argv[1], "join")) {
-		if (argc != 4)
+	try {
+		if (argc < 3)
 			throw std::runtime_error("wrong args");
-		else
-			testClient(argv[2], atoi(argv[3]));
-	} else
-		throw std::runtime_error("wrong args");
+		if (!strcmp(argv[1], "host"))
+			testHost(atoi(argv[2]));
+		else if (!strcmp(argv[1], "join")) {
+			if (argc != 4)
+				throw std::runtime_error("wrong args");
+			else
+				testClient(argv[2], atoi(argv[3]));
+		} else
+			throw std::runtime_error("wrong args");
+	} catch (std::exception &e) {
+		std::cerr << e.what() << "\n";
+	}
 }
 
 std::string errName(net::result const& err) {
@@ -45,17 +49,21 @@ void runChat(net::connection con, bool first) {
 	bool myTurn = first;
 	while (!std::cin.eof()) {
 		if (myTurn) {
+			std::cout << "** your turn:\n";
 			std::string line;
 			std::cin >> line;
 			size_t len = line.size()+1;
 			auto err = net::write(con, &len, sizeof(len));
 			if (err == net::result::ok)
 				err = net::write(con, line.c_str(), len);
-			if (err != net::result::ok)
-				std::cout << "FAILED to send message: " << errMsg(err) << "\n";
+			if (err != net::result::ok) {
+				std::cout << "** FAILED to send message: " << errMsg(err) << "\n";
+				return;
+			}
 		} else {
 			char buf[1024];
 			size_t len;
+			std::cout << "    >>> ";
 			auto err = net::read(con, &len, sizeof(len), sizeof(len));
 			if (err == net::result::ok) {
 				size_t recv = 0;
@@ -63,7 +71,8 @@ void runChat(net::connection con, bool first) {
 					size_t chunkSize = std::min(sizeof(buf)-1, len-recv);
 					err = net::read(con, buf, sizeof(buf), chunkSize);
 					if (err != net::result::ok) {
-						std::cout << "FAILED to receive message: " << errMsg(err) << "\n";
+						std::cout << "** FAILED to receive message: " << errMsg(err) << "\n";
+						return;
 					} else {
 						buf[chunkSize] = 0;
 						std::cout << buf;
@@ -72,7 +81,8 @@ void runChat(net::connection con, bool first) {
 				}
 				std::cout << "\n";
 			} else {
-				std::cout << "FAILED to receive message: " << errMsg(err) << "\n";
+				std::cout << "**FAILED to receive message: " << errMsg(err) << "\n";
+				return;
 			}
 		}
 		myTurn = !myTurn;
@@ -80,42 +90,38 @@ void runChat(net::connection con, bool first) {
 }
 
 void testHost(int port) {
-	std::cout << "Start listening on port " << port << "...\n";
+	std::cout << "** Start listening on port " << port << "...\n";
 	net::listener listener;
 	semaphore clientConnected;
 	net::connection clientCon;
 	net::startListen((uint16_t)port, listener, [&] (net::result res, net::connection con) {
 		if (res != net::result::ok) {
-			std::cout << "Incomming connection failed: " << errMsg(res) << "\n";
+			std::cout << "** Incomming connection failed: " << errMsg(res) << "\n";
 		} else {
-			net::stopListen(listener);
-			std::cout << "Client connected. Waiting for him to say hi...\n";
+			std::cout << "** Client connected. Waiting for him to say hi...\n";
 			clientConnected.notify();
 		}
 	});
-//	if (err != net::result::ok) {
-//		std::cout << "Failed to open port: " << errMsg(err) << "\n";
-//		return;
-//	}
 	clientConnected.wait();
+	net::stopListen(listener);
 	runChat(clientCon, false);
-	std::cout << "closing connection...\n";
+	std::cout << "** Closing connection...\n";
 	net::closeConnection(clientCon);
-	std::cout << "Connection closed. EXITING.\n";
+	std::cout << "** Connection closed. EXITING.\n";
 }
 
 void testClient(char* host, int port) {
-	std::cout << "connecting to " << host << ":" << port << " ...\n";
+	std::cout << "** Connecting to " << host << ":" << port << " ...\n";
 	net::connection con;
 	auto res = net::connect(host, port, con);
 	if (res != net::result::ok) {
-		std::cout << "FAILED to connect: " << errMsg(res) << "\n";
+		std::cout << "** FAILED to connect: " << errMsg(res) << "\n";
 		return;
 	} else {
-		std::cout << "CONNECTED. Say hello!\n";
+		std::cout << "** CONNECTED. Say hello!\n";
 		runChat(con, true);
-		std::cout << "closing connection...\n";
+		std::cout << "** Closing connection...\n";
 		net::closeConnection(con);
-		std::cout << "Connection closed. EXITING.\n";
+		std::cout << "** Connection closed. EXITING.\n";
 	}
 }
