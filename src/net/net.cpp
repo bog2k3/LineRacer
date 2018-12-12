@@ -57,6 +57,7 @@ void startListen(uint16_t port, listener &outLis, newConnectionCallback callback
 	tcp::acceptor* acceptor = new tcp::acceptor(theIoContext, tcp::endpoint(tcp::v4(), port));
 	std::lock_guard<std::mutex> lk(asyncOpMutex);
 	listeners.push_back(acceptor);
+	outLis = listeners.size() - 1;
 	startListenImpl(acceptor, callback);
 	checkStart();
 }
@@ -185,6 +186,7 @@ static void checkFinish(std::unique_lock<std::mutex> &lk) {
 		workAvail.notify();
 		lk.unlock();
 		contextThread.join();
+		contextThread = {};
 		lk.lock();
 		// signal the thread is done
 		isContextThreadRunning.store(false, std::memory_order_release);
