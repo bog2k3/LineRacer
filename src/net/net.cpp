@@ -166,8 +166,16 @@ static void ioContextThread() {
 static void checkStart() {
 	// we are currently under asyncOpMutex lock by the caller
 	if (!isContextThreadRunning.load(std::memory_order_acquire)) {
-		isContextThreadRunning.store(true, std::memory_order_release);
-		contextThread = std::thread(&ioContextThread);
+		unsigned nObjects = 0;
+		for (auto &c : connections)
+			nObjects += c != nullptr ? 1 : 0;
+		for (auto &c : listeners)
+			nObjects += c != nullptr ? 1 : 0;
+		// we only start the context thread if active objects were found
+		if (nObjects > 0) {
+			isContextThreadRunning.store(true, std::memory_order_release);
+			contextThread = std::thread(&ioContextThread);
+		}
 	}
 }
 
