@@ -20,7 +20,7 @@
 #include <boglfw/renderOpenGL/Shape3D.h>
 #include <boglfw/renderOpenGL/ViewportCoord.h>
 #include <boglfw/utils/bitFlags.h>
-#include <boglfw/GUI/GuiSystem.h>
+#include <boglfw/GUI/guiSystem.h>
 #include <boglfw/Infrastructure.h>
 #include <boglfw/input/SDLInput.h>
 #include <boglfw/utils/drawable.h>
@@ -54,7 +54,7 @@ std::shared_ptr<SinglePlayerMenu> singlePlayerMenu;
 std::shared_ptr<JoinMultiPlayerMenu> joinMultiPlayerMenu;
 std::shared_ptr<HostMultiPlayerMenu> hostMultiPlayerMenu;
 std::shared_ptr<GuiContainerElement> pActiveMenu;
-GuiSystem guiSystem;
+GuiSystem* guiSystem = nullptr;
 
 GridPoint mousePoint{0, 0, 0};
 
@@ -167,7 +167,7 @@ void handleMouseEvent(InputEvent &ev) {
 void handleInputEvent(InputEvent &ev) {
 	if (ev.isConsumed())
 		return;
-	guiSystem.handleInput(ev);
+	guiSystem->handleInput(ev);
 	if (ev.isConsumed())
 		return;
 	switch (ev.type) {
@@ -211,7 +211,7 @@ void initialize(SDL_Window* window) {
 	glm::vec2 screenSize{wW, wH};
 	mainMenu = std::make_shared<MainMenu>(screenSize);
 	mainMenu->hide();
-	guiSystem.addElement(mainMenu);
+	guiSystem->addElement(mainMenu);
 	mainMenu->onExit.add([&] {
 		SIGNAL_QUIT = true;
 	});
@@ -230,21 +230,21 @@ void initialize(SDL_Window* window) {
 	singlePlayerMenu->onBack.add([&] {
 		switchMenu(mainMenu);
 	});
-	guiSystem.addElement(singlePlayerMenu);
+	guiSystem->addElement(singlePlayerMenu);
 
 	joinMultiPlayerMenu = std::make_shared<JoinMultiPlayerMenu>(screenSize);
 	joinMultiPlayerMenu->hide();
 	joinMultiPlayerMenu->onBack.add([&] {
 		switchMenu(mainMenu);
 	});
-	guiSystem.addElement(joinMultiPlayerMenu);
+	guiSystem->addElement(joinMultiPlayerMenu);
 
 	hostMultiPlayerMenu = std::make_shared<HostMultiPlayerMenu>(screenSize);
 	hostMultiPlayerMenu->hide();
 	hostMultiPlayerMenu->onBack.add([&] {
 		switchMenu(mainMenu);
 	});
-	guiSystem.addElement(hostMultiPlayerMenu);
+	guiSystem->addElement(hostMultiPlayerMenu);
 	/*auto btn = std::make_shared<Button>(glm::vec2{30, 30}, glm::vec2{120, 30}, "Draw Track");
 	btn->onClick.add([&](Button* b) {
 		if (track.isInDesignMode()) {
@@ -254,7 +254,7 @@ void initialize(SDL_Window* window) {
 			track.enableDesignMode(true);
 		}
 	});
-	guiSystem.addElement(btn);
+	guiSystem->addElement(btn);
 
 	btn = std::make_shared<Button>(glm::vec2{30, 70}, glm::vec2{120, 30}, "Play!");
 	btn->onClick.add([&](Button *b) {
@@ -267,7 +267,7 @@ void initialize(SDL_Window* window) {
 			game.start();
 		}
 	});
-	guiSystem.addElement(btn);*/
+	guiSystem->addElement(btn);*/
 }
 
 void switchMenu(std::shared_ptr<GuiContainerElement> const& pM) {
@@ -311,6 +311,8 @@ int main(int argc, char** argv) {
 	Renderer boglfwRenderer(windowW, windowH);
 	auto vp = std::make_unique<Viewport>(0, 0, windowW, windowH);
 	vp->setBkColor((glm::vec3)Colors::BACKGROUND);
+	
+	guiSystem = new GuiSystem(vp.get(), {0, 0}, {windowW, windowH});
 
 	std::vector<drawable> drawList {
 		&grid,
@@ -320,7 +322,7 @@ int main(int argc, char** argv) {
 		&drawMousePoint,
 		//&hctrl,
 		//&nctrl,
-		&guiSystem,
+		guiSystem,
 		&drawInfoTexts,
 	};
 	vp->setDrawList(drawList);
@@ -337,6 +339,9 @@ int main(int argc, char** argv) {
 		boglfwRenderer.render();
 		gltEnd();
 	}
+	
+	delete guiSystem;
+	guiSystem = nullptr;
 
 	boglfwRenderer.unload();
 	Infrastructure::shutDown();
