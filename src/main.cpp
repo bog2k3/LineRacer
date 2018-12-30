@@ -20,7 +20,7 @@
 #include <boglfw/renderOpenGL/Shape3D.h>
 #include <boglfw/renderOpenGL/ViewportCoord.h>
 #include <boglfw/utils/bitFlags.h>
-#include <boglfw/GUI/guiSystem.h>
+#include <boglfw/GUI/GuiSystem.h>
 #include <boglfw/Infrastructure.h>
 #include <boglfw/input/SDLInput.h>
 #include <boglfw/utils/drawable.h>
@@ -74,7 +74,7 @@ void drawMousePoint(Viewport*) {
 }
 
 void drawInfoTexts(Viewport*) {
-	const int fontSz = 16;
+	const int fontSz = 18;
 	// draw game status
 	/*std::string gameStatusText;
 	switch (game.state()) {
@@ -303,9 +303,24 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-	if (!gltInitWithSDL(window)) {
+	bool enableSuperSampling = true;
+
+	bool gltInitResult = false;
+	if (enableSuperSampling) {
+		SSDescriptor ssDesc { 2, 2 };
+		gltInitResult = gltInitWithSDLSupersampled(window, ssDesc);
+	} else {
+		gltInitResult = gltInitWithSDL(window);
+	}
+	if (!gltInitResult) {
 		std::cerr << "Could not initialize OpenGL!: " << SDL_GetError() << "\n";
 		return -1;
+	}
+
+	if (!enableSuperSampling) {
+//		glLineWidth(1.f);
+		glEnable(GL_LINE_SMOOTH);
+		glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 	}
 
 	Renderer boglfwRenderer(windowW, windowH);
