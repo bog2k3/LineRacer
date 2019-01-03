@@ -303,11 +303,11 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-	bool enableSuperSampling = true;
+	bool enableSuperSampling = false;
 
 	bool gltInitResult = false;
 	if (enableSuperSampling) {
-		SSDescriptor ssDesc { 2, 2 };
+		SSDescriptor ssDesc {SSDescriptor::SS_4X}; // 2x2 super samples
 		gltInitResult = gltInitWithSDLSupersampled(window, ssDesc);
 	} else {
 		gltInitResult = gltInitWithSDL(window);
@@ -317,16 +317,10 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-	if (!enableSuperSampling) {
-//		glLineWidth(1.f);
-		glEnable(GL_LINE_SMOOTH);
-		glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-	}
-
 	Renderer boglfwRenderer(windowW, windowH);
 	auto vp = std::make_unique<Viewport>(0, 0, windowW, windowH);
 	vp->setBkColor((glm::vec3)Colors::BACKGROUND);
-	
+
 	guiSystem = new GuiSystem(vp.get(), {0, 0}, {windowW, windowH});
 
 	std::vector<drawable> drawList {
@@ -354,7 +348,7 @@ int main(int argc, char** argv) {
 		boglfwRenderer.render();
 		gltEnd();
 	}
-	
+
 	delete guiSystem;
 	guiSystem = nullptr;
 

@@ -27,6 +27,8 @@ endif()
 file(GLOB_RECURSE sources	src/*.h)
 file(GLOB_RECURSE sources 	src/*.cpp)
 
+file( GLOB_RECURSE dataFiles	${BOGLFW_DIST_DIR}/data/*.* )
+
 add_executable(LineRacer ${sources})
 
 #add libraries
@@ -45,3 +47,8 @@ set_property(TARGET LineRacer PROPERTY CXX_STANDARD 14)
 target_compile_options(LineRacer PUBLIC -Wall -std=c++14)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
+
+ADD_CUSTOM_TARGET(doAlways ALL
+	SOURCES "${dataFiles}"
+	COMMAND ${CMAKE_COMMAND} -E copy_directory ${BOGLFW_DIST_DIR}/data $<TARGET_FILE_DIR:LineRacer>/data
+)
