@@ -3,6 +3,7 @@
 #include "color.h"
 
 #include <boglfw/renderOpenGL/Shape2D.h>
+#include <boglfw/math/math3D.h>
 
 Grid::Grid(int size, int winW, int winH) : size_(size), winW_(winW), winH_(winH) {
 }
