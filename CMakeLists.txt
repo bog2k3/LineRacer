@@ -2,6 +2,8 @@
 
 cmake_minimum_required(VERSION 2.8)
 
+SET(PROJECT_NAME "LineRacer")
+
 # Project's name
 project(LineRacer)
 
@@ -10,6 +12,31 @@ set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 
 file(READ ".boglfw_path" BOGLFW_DIST_DIR)
 string(STRIP ${BOGLFW_DIST_DIR} BOGLFW_DIST_DIR)
+
+# verify that the available framework version is at least the required version
+# the required version is the last version this was built against
+function(BadFwVersion)
+	message(FATAL_ERROR
+		"Required framework version is higher than available version.\n"
+		"Update boglfw and try to build again."
+	)
+endfunction()
+file(READ "${BOGLFW_DIST_DIR}/fw-version" BOGLFW_AVAIL_VS)
+string(REPLACE "." ";" availVs ${BOGLFW_AVAIL_VS})
+list(GET availVs 0 availVerMajor)
+list(GET availVs 1 availVerMinor)
+file(READ "fw-target" BOGLFW_REQUIRED_VS)
+string(REPLACE "." ";" reqVs ${BOGLFW_REQUIRED_VS})
+list(GET reqVs 0 reqVerMajor)
+list(GET reqVs 1 reqVerMinor)
+if (${reqVerMajor} LESS ${availVerMajor} OR ${reqVerMajor} EQUAL ${availVerMajor})
+	if (${reqVerMajor} EQUAL ${availVerMajor} AND ${reqVerMinor} GREATER ${availVerMinor})
+		BadFwVersion()
+	endif()
+else()
+	BadFwVersion()
+endif()
+# ----- done checking framework version
 
 # The following folder will be included
 include_directories("${BOGLFW_DIST_DIR}/include")
@@ -48,6 +75,14 @@ target_compile_options(LineRacer PUBLIC -Wall -std=c++14)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
+# update the framework version we built against
+ADD_CUSTOM_COMMAND (
+	TARGET LineRacer
+	POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy "${BOGLFW_DIST_DIR}/fw-version" "$<TARGET_FILE_DIR:LineRacer>/fw-target"
+)
+
+# copy data files from the framework
 ADD_CUSTOM_TARGET(doAlways ALL
 	SOURCES "${dataFiles}"
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${BOGLFW_DIST_DIR}/data $<TARGET_FILE_DIR:LineRacer>/data
