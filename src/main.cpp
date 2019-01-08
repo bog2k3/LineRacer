@@ -308,9 +308,9 @@ int main(int argc, char** argv) {
 	bool gltInitResult = false;
 	if (enableSuperSampling) {
 		SSDescriptor ssDesc {SSDescriptor::SS_4X}; // 2x2 super samples
-		gltInitResult = gltInitWithSDLSupersampled(window, ssDesc);
+		gltInitResult = gltInitSDLSupersampled(window, ssDesc);
 	} else {
-		gltInitResult = gltInitWithSDL(window);
+		gltInitResult = gltInitSDL(window);
 	}
 	if (!gltInitResult) {
 		std::cerr << "Could not initialize OpenGL!: " << SDL_GetError() << "\n";
