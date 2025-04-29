@@ -1,0 +1,19 @@
+{
+  "name": "lineracer",
+  "version": "1.0.0",
+  "description": "A multiplayer replica of the old pen and paper racing game",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bog2k3/lineracer.git"
+  },
+  "author": "bogdan ionita <bog2k3@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bog2k3/lineracer/issues"
+  },
+  "homepage": "https://github.com/bog2k3/lineracer#readme"
+}
