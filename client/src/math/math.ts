@@ -1,71 +1,97 @@
-struct Transform {
-	float scale = 1;	// screen to world unit ratio
-	float transX = 0;	// world-space offset
-	float transY = 0;	// workd-space offset
-};
+import { Vector } from "./vector";
 
-struct ScreenPoint;
-
-struct WorldPoint {
-	float x = 0;
-	float y = 0;
-
-	ScreenPoint toScreen(Transform const& tr);
-
-	float distanceTo(WorldPoint const& p) {
-		float xdif = x - p.x;
-		float ydif = y - p.y;
-		return sqrt(xdif*xdif + ydif*ydif);
-	}
-
-	bool operator==(WorldPoint const& p) const {
-		return x==p.x && y==p.y;
-	}
-};
-
-struct ScreenPoint {
-	int x=0;
-	int y=0;
-
-	WorldPoint toWorld(Transform const& tr);
-
-	operator glm::vec2() const {
-		return {x, y};
-	}
-};
-
-struct GridPoint {
-	int x=0;			// x coordinate on grid
-	int y=0;			// y coordinate on grid
-	float distance=0;	// distance from actual pixel to the grid location, relative to grid size [0.0 .. sqrt(2)/2]
-
-	GridPoint() = default;
-	GridPoint(int x, int y) : x(x), y(y), distance(0) {}
-	GridPoint(int x, int y, float dist) : x(x), y(y), distance(dist) {}
-
-	bool operator==(GridPoint const& p) const {
-		return x==p.x && y==p.y;
-	}
-};
-
-struct Arrow {
-	GridPoint from;
-	GridPoint to;
-
-	int length() const;
-	std::pair<int, int> direction() const;
-
-	static Arrow fromPointAndDir(GridPoint p, int dirX, int dirY) {
-		return Arrow{p, {p.x + dirX, p.y + dirY}};
-	}
-};
-
-template<class P, typename T1 = decltype(P::x), typename T2 = decltype(P::y)>
-P operator+ (P const& p1, P const& p2) {
-	return P{p1.x + p2.x, p1.y + p2.y};
+export class Transform {
+	/** screen to world unit ratio */
+	scale = 1;
+	/** world-space offset */
+	transX = 0;
+	/** workd-space offset */
+	transY = 0;
 }
 
-template<class P, typename T1 = decltype(P::x), typename T2 = decltype(P::y)>
-P operator- (P const& p1, P const& p2) {
-	return P{p1.x - p2.x, p1.y - p2.y};
+export interface IPoint {
+	x: number;
+	y: number;
+}
+
+export class WorldPoint implements IPoint {
+	x = 0;
+	y = 0;
+
+	constructor(x: number, y: number) {
+		this.x = x;
+		this.y = y;
+	}
+
+	toScreen(tr: Transform): ScreenPoint {
+		const sx = (this.x + tr.transX) * tr.scale;
+		const sy = (this.y + tr.transY) * tr.scale;
+		return new ScreenPoint(sx, sy);
+	}
+
+	distanceTo(p: WorldPoint): number {
+		const xdif = this.x - p.x;
+		const ydif = this.y - p.y;
+		return Math.sqrt(xdif * xdif + ydif * ydif);
+	}
+
+	eq(p: WorldPoint): boolean {
+		return this.x == p.x && this.y == p.y;
+	}
+}
+
+export class ScreenPoint implements IPoint {
+	x = 0;
+	y = 0;
+
+	constructor(x: number, y: number) {
+		this.x = x;
+		this.y = y;
+	}
+
+	toWorld(tr: Transform): WorldPoint {
+		const wx = this.x / tr.scale - tr.transX;
+		const wy = this.y / tr.scale - tr.transY;
+		return new WorldPoint(wx, wy);
+	}
+}
+
+export class GridPoint {
+	/** x coordinate on grid */
+	x = 0;
+	/** y coordinate on grid */
+	y = 0;
+	/** distance from actual pixel to the grid location, relative to grid size [0.0 .. sqrt(2)/2] */
+	distance = 0;
+
+	constructor(x: number, y: number, dist: number = 0) {
+		this.x = x;
+		this.y = y;
+		this.distance = dist;
+	}
+
+	eq(p: GridPoint): boolean {
+		return this.x == p.x && this.y == p.y;
+	}
+}
+
+export class Arrow {
+	constructor(public from: GridPoint, public to: GridPoint) {}
+
+	length(): number {
+		const dir = this.direction();
+		const dx = Math.abs(dir.x);
+		const dy = Math.abs(dir.y);
+		return Math.max(dx, dy);
+	}
+
+	direction(): Vector {
+		const x = this.to.x - this.from.x;
+		const y = this.to.y - this.from.y;
+		return new Vector(x, y);
+	}
+
+	static fromPointAndDir(p: GridPoint, dirX: number, dirY: number): Arrow {
+		return new Arrow(p, new GridPoint(p.x + dirX, p.y + dirY));
+	}
 }

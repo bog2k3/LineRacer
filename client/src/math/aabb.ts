@@ -1,9 +1,9 @@
-import { Plane } from "./plane";
+import { Axis } from "./axis";
 import { Vector } from "./vector";
 
 export class AABB {
-	vMin = new Vector(Infinity, Infinity, Infinity);
-	vMax = new Vector(-Infinity, -Infinity, -Infinity);
+	vMin = new Vector(Infinity, Infinity);
+	vMax = new Vector(-Infinity, -Infinity);
 
 	constructor(vMin?: Vector, vMax?: Vector) {
 		if (vMin) {
@@ -24,7 +24,7 @@ export class AABB {
 	}
 
 	isEmpty(): boolean {
-		return this.vMin.x > this.vMax.x || this.vMin.y > this.vMax.y || this.vMin.z > this.vMax.z;
+		return this.vMin.x > this.vMax.x || this.vMin.y > this.vMax.y;
 	}
 
 	center(): Vector {
@@ -32,30 +32,26 @@ export class AABB {
 	}
 
 	size(): Vector {
-		return new Vector(this.vMax.x - this.vMin.x, this.vMax.y - this.vMin.y, this.vMax.z - this.vMin.z);
+		return new Vector(this.vMax.x - this.vMin.x, this.vMax.y - this.vMin.y);
 	}
 
-	/** Qualifies this AABB against a plane in space.
+	/** Qualifies this AABB against an axis
 	 * Returns:
-	 * 	-1 if the entire AABB is on the negative side of the plane (even if at least one vertex is exactly on the plane),
-	 * 	+1 if the entire AABB is on the positive side of the plane (even if at least one vertex is exactly on the plane),
-	 * 	 0 if the AABB spans both sides of the plane (some vertices are strictly on the positive side, and some strictly on the negative).
+	 * 	-1 if the entire AABB is on the negative side of the axis, where y<=mx+n (even if at least one vertex is exactly on the axis),
+	 * 	+1 if the entire AABB is on the positive side of the axis, where y>=mx+n (even if at least one vertex is exactly on the axis),
+	 * 	 0 if the AABB spans both sides of the axis (some vertices are strictly on the positive side, and some strictly on the negative).
 	 */
-	qualifyPlane(plane: Plane): number {
+	qualifyAxis(axis: Axis): number {
 		const verts: Vector[] = [
 			this.vMin,
-			new Vector(this.vMin.x, this.vMin.y, this.vMax.z),
-			new Vector(this.vMin.x, this.vMax.y, this.vMax.z),
-			new Vector(this.vMin.x, this.vMax.y, this.vMin.z),
+			new Vector(this.vMin.x, this.vMax.y),
 			this.vMax,
-			new Vector(this.vMax.x, this.vMin.y, this.vMin.z),
-			new Vector(this.vMax.x, this.vMin.y, this.vMax.z),
-			new Vector(this.vMax.x, this.vMax.y, this.vMin.z),
+			new Vector(this.vMax.x, this.vMin.y),
 		];
 		let allPositive = true;
 		let allNegative = true;
 		for (let i = 0; i < 8; i++) {
-			const q = plane.pointDistance(verts[i]);
+			const q = axis.pointSide(verts[i]);
 			if (q > 0) {
 				allNegative = false;
 			} else if (q < 0) {
@@ -65,40 +61,30 @@ export class AABB {
 		return allPositive ? +1 : allNegative ? -1 : 0;
 	}
 
-	intersectsSphere(center: Vector, radius: number): boolean {
+	intersectsCircle(center: Vector, radius: number): boolean {
 		if (
 			center.x + radius <= this.vMin.x ||
 			center.y + radius <= this.vMin.y ||
-			center.z + radius <= this.vMin.z ||
 			center.x - radius >= this.vMax.x ||
-			center.y - radius >= this.vMax.y ||
-			center.z - radius >= this.vMax.z
+			center.y - radius >= this.vMax.y
 		) {
 			return false;
 		}
-		if (
-			(center.x > this.vMin.x && center.x < this.vMax.x) ||
-			(center.y > this.vMin.y && center.y < this.vMax.y) ||
-			(center.z > this.vMin.z && center.z < this.vMax.z)
-		) {
+		if ((center.x > this.vMin.x && center.x < this.vMax.x) || (center.y > this.vMin.y && center.y < this.vMax.y)) {
 			return true;
 		}
 		const rsq = radius * radius;
 		return (
 			center.sub(this.vMin).lengthSq() < rsq ||
 			center.sub(this.vMax).lengthSq() < rsq ||
-			center.sub(new Vector(this.vMin.x, this.vMax.y, this.vMin.z)).lengthSq() < rsq ||
-			center.sub(new Vector(this.vMax.x, this.vMax.y, this.vMin.z)).lengthSq() < rsq ||
-			center.sub(new Vector(this.vMax.x, this.vMin.y, this.vMin.z)).lengthSq() < rsq ||
-			center.sub(new Vector(this.vMin.x, this.vMin.y, this.vMax.z)).lengthSq() < rsq ||
-			center.sub(new Vector(this.vMin.x, this.vMax.y, this.vMax.z)).lengthSq() < rsq ||
-			center.sub(new Vector(this.vMax.x, this.vMin.y, this.vMax.z)).lengthSq() < rsq
+			center.sub(new Vector(this.vMin.x, this.vMax.y)).lengthSq() < rsq ||
+			center.sub(new Vector(this.vMax.x, this.vMin.y)).lengthSq() < rsq
 		);
 	}
 
 	/** expands this AABB to include the new point(s) */
 	expandInPlace(...ps: Vector[]): this {
-		const axes = ["x", "y", "z"];
+		const axes = ["x", "y"];
 		for (let p of ps) {
 			for (let i = 0; i < 3; i++) {
 				if (p[axes[i]] < this.vMin[axes[i]]) {
@@ -134,23 +120,13 @@ export class AABB {
 			other.vMin.x >= this.vMax.x ||
 			other.vMax.x <= this.vMin.x ||
 			other.vMin.y >= this.vMax.y ||
-			other.vMax.y <= this.vMin.y ||
-			other.vMin.z >= this.vMax.z ||
-			other.vMin.z <= this.vMin.z
+			other.vMax.y <= this.vMin.y
 		) {
 			return AABB.empty();
 		} else {
 			return new AABB(
-				new Vector(
-					Math.max(this.vMin.x, other.vMin.x),
-					Math.max(this.vMin.y, other.vMin.y),
-					Math.max(this.vMin.z, other.vMin.z),
-				),
-				new Vector(
-					Math.min(this.vMax.x, other.vMax.x),
-					Math.min(this.vMax.y, other.vMax.y),
-					Math.min(this.vMax.z, other.vMax.z),
-				),
+				new Vector(Math.max(this.vMin.x, other.vMin.x), Math.max(this.vMin.y, other.vMin.y)),
+				new Vector(Math.min(this.vMax.x, other.vMax.x), Math.min(this.vMax.y, other.vMax.y)),
 			);
 		}
 	}

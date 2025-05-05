@@ -1,4 +1,6 @@
 import { Color, Colors } from "./color";
+import { lineMath } from "./math/line-math";
+import { Arrow, GridPoint, ScreenPoint, WorldPoint } from "./math/math";
 import { Vector } from "./math/vector";
 import {Event} from "./utils/event";
 import {randi} from "./utils/random";
@@ -61,7 +63,7 @@ export class Game {
 		}
 	}
 
-	draw(vp: Viewport): void {
+	draw(): void {
 		if (this.state_ != GameState.STATE_START_SELECTION && this.state_ != GameState.STATE_PLAYING)
 			return;
 		const colors: Color[] = [
@@ -129,8 +131,8 @@ export class Game {
 
 	/** @returns true if the arrow doesn't intersect any player's position */
 	pathIsFree(a: Arrow): boolean {
-		p1: WorldPoint = this.track_.grid().gridToWorld(a.from);
-		p2: WorldPoint = this.track_.grid().gridToWorld(a.to);
+		const p1: WorldPoint = this.track_.grid().gridToWorld(a.from);
+		const p2: WorldPoint = this.track_.grid().gridToWorld(a.to);
 		for (let i=0; i<this.players_.length; i++) {
 			if (!this.players_[i].arrows.length)
 				continue;
@@ -139,7 +141,7 @@ export class Game {
 			if (a.to == this.players_[i].arrows.slice(-1)[0].to)	// arrow would end up on top of an occupied position
 				return false;
 			const q: WorldPoint = this.track_.grid().gridToWorld(this.players_[i].arrows.slice(-1)[0].to);
-			if (lineMath::onSegment(p1, q, p2))	// arrow would cross another player's position
+			if (lineMath.onSegment(p1, q, p2))	// arrow would cross another player's position
 				return false;
 		}
 		if (this.track_.intersectionsCount(a.from, a.to) > 1) // if the arrow intersects the track in more than one place, disallow it
@@ -258,7 +260,7 @@ export class Game {
 						this.players_[this.currentPlayer_].isOffTrack = true;
 						this.players_[this.currentPlayer_].trackCrossingIndex = this.track_.computeCrossingIndex(a.from, a.to);
 						this.players_[this.currentPlayer_].player.setOffTrackData(/*{true, this.players_[this.currentPlayer_].trackCrossingIndex}*/ ); // FIXME
-						this.players_[this.currentPlayer_].arrows.push({nextPoint, nextPoint});
+						this.players_[this.currentPlayer_].arrows.push(new Arrow(nextPoint, nextPoint));
 						this.players_[this.currentPlayer_].player.setLastArrow(this.players_[this.currentPlayer_].arrows.slice(-1)[0]);
 					}
 			} else if (this.players_[this.currentPlayer_].isOffTrack) {
@@ -270,7 +272,7 @@ export class Game {
 			let intersect: WorldPoint;
 			const crossSign: number = this.track_.checkStartLineCross(a.from, a.to, true, &intersect);
 			if (crossSign != 0) {
-				if (!this.isPointOnTrack(intersect)) {
+				if (!this.isWPointOnTrack(intersect)) {
 					this.players_[this.currentPlayer_].startLineCrossCount += crossSign;
 				}
 			}
@@ -301,10 +303,10 @@ export class Game {
 		} else if (this.state_ == GameState.STATE_PLAYING) {
 			const lastDir: Vector = this.players_[this.currentPlayer_].arrows.slice(-1)[0].direction();
 			const lastP: GridPoint = this.players_[this.currentPlayer_].arrows.slice(-1)[0].to;
-			const center: Arrow = Arrow.fromPointAndDir(lastP, lastDir.first, lastDir.second);
+			const center: Arrow = Arrow.fromPointAndDir(lastP, lastDir.x, lastDir.y);
 			for (let i=-1; i<=1; i++)
 				for (let j=-1; j<=1; j++) {
-					const a = new Arrow(center.from, {center.to.x + j, center.to.y + i});
+					const a = new Arrow(center.from, new GridPoint(center.to.x + j, center.to.y + i));
 					const maxLength = this.players_[this.currentPlayer_].isOffTrack ? 1 : 6;
 					if (a.length() > maxLength)
 						continue;
@@ -316,7 +318,7 @@ export class Game {
 						const arrowTipW: WorldPoint = this.track_.grid().gridToWorld(a.to);
 						if (this.track_.pointInsidePolygon(arrowTipW, 0) && !this.track_.pointInsidePolygon(arrowTipW, 1)) {
 							const crossIndex = this.track_.computeCrossingIndex(a.from, a.to);
-							if ((crossIndex.second - this.players_[this.currentPlayer_].trackCrossingIndex.second) * this.track_.polyDirection(crossIndex.first) > 0)
+							if ((crossIndex.second - this.players_[this.currentPlayer_].trackCrossingIndex.position) * this.track_.polyDirection(crossIndex.first) > 0)
 								continue;
 						}
 					}
@@ -334,13 +336,13 @@ export class Game {
 		const validMoves: Arrow[] = this.getPlayerVectors();
 		// try to keep the same vector as before if it's valid
 		for (const a of validMoves)
-			if (a.direction().first == lastVector.direction().first && a.direction().second == lastVector.direction().second && a.length() == lastVector.length())
+			if (a.direction().x == lastVector.direction().x && a.direction().y == lastVector.direction().y && a.length() == lastVector.length())
 				return a;
 		// same vector could not be selected, try one with the same direction
 		const sameDir: Arrow[] = [null, null];
 		let nSame=0;
 		for (const a of validMoves)
-			if (a.direction().first == lastVector.direction().first && a.direction().second == lastVector.direction().second)
+			if (a.direction().x == lastVector.direction().x && a.direction().y == lastVector.direction().y)
 				sameDir[nSame++] = a;
 		if (nSame > 0) {
 			if (nSame == 1 || sameDir[0].length() < sameDir[1].length())	// choose the shorter (or the only) one
