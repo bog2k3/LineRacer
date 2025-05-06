@@ -22,3 +22,7 @@ export function lerp(a: number, b: number, f: number): number {
 export function sqr(x: number): number {
 	return x * x;
 }
+
+export function fmod(x: number, y: number): number {
+	return x - Math.floor(x / y) * y;
+}

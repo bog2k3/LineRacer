@@ -2,6 +2,8 @@ import { Color, Colors } from "./color";
 import { lineMath } from "./math/line-math";
 import { Arrow, GridPoint, ScreenPoint, WorldPoint } from "./math/math";
 import { Vector } from "./math/vector";
+import { Player, PlayerOfftrackData, TurnType } from "./player";
+import { Track } from "./track";
 import {Event} from "./utils/event";
 import {randi} from "./utils/random";
 
@@ -16,8 +18,7 @@ class PlayerInfo {
 	/** arrows the player has drawn */
 	arrows: Arrow[] = [];
 	laps = 0;
-	isOffTrack = false;
-	trackCrossingIndex: {contourIndex: number, position: number} =  {contourIndex: 0, position: 0};
+	offtrackData: PlayerOfftrackData = {offTrack: false, contourIndex: 0, position: 0};
 	/** counts how many times the player crossed the start line (sign depends on direction) */
 	startLineCrossCount = 0;
 
@@ -34,11 +35,10 @@ export class Game {
 	readonly onStateChange = new Event<(GameState) => void>();
 	readonly onTurnAdvance = new Event<() => void>();
 
-	constructor(private readonly track_: Track, private readonly turnTimeLimit_: number, private readonly targetLaps_: number) {}
+	constructor(private track_: Track, private readonly turnTimeLimit_: number, private readonly targetLaps_: number) {}
 
 	destroy() {
 		this.stop();
-		this.track_.destroy();
 		this.track_ = null;
 	}
 
@@ -47,7 +47,7 @@ export class Game {
 	update(dt: number): void {
 		switch (this.state_) {
 		case GameState.STATE_WAITING_PLAYERS:
-			if (this.players_.length == track_.getStartPositions().length)	// all positions have been filled, start automatically
+			if (this.players_.length == this.track_.getStartPositions().length)	// all positions have been filled, start automatically
 				this.start();
 			return;
 		case GameState.STATE_STOPPED:
@@ -97,8 +97,8 @@ export class Game {
 	/** @returns true if player was added and false if it couldn't be added (session is full) */
 	addPlayer(player: Player): boolean {
 		if (this.players_.length < this.track_.getStartPositions().length) {
-			player.setColor(this.players_.length);
-			player.setOffTrackData({x: false, y: {a: -1, b: -1}});
+			player.color = this.players_.length;
+			player.setOffTrackData({offTrack: false, a: -1, b: -1}); // FIXME
 			this.players_.push(new PlayerInfo(player));
 			return true;
 		} else {
@@ -173,7 +173,7 @@ export class Game {
 		if (this.currentPlayer_ >= 0) {
 			this.players_[this.currentPlayer_].player.endTurn();
 			if (this.checkWin())
-				this.players_[this.currentPlayer_].player.activateTurn(Player::TURN_FINISHED);
+				this.players_[this.currentPlayer_].player.activateTurn(TurnType.TURN_FINISHED);
 		}
 		while (++this.currentPlayer_ < this.players_.length && this.players_[this.currentPlayer_].player.isFinished()) {
 		}
@@ -192,7 +192,7 @@ export class Game {
 				}
 			}
 		}
-		this.players_[this.currentPlayer_].player.activateTurn(this.state_ == GameState.STATE_START_SELECTION ? Player::TURN_SELECT_START : Player::TURN_MOVE);
+		this.players_[this.currentPlayer_].player.activateTurn(this.state_ == GameState.STATE_START_SELECTION ? TurnType.TURN_SELECT_START : TurnType.TURN_MOVE);
 		this.players_[this.currentPlayer_].player.setAllowedVectors(this.getPlayerVectors());
 		this.onTurnAdvance.trigger();
 	}
@@ -246,7 +246,7 @@ export class Game {
 				}
 			}
 			// if we got here, player's selection was none of the valid ones, kick him out
-			this.players_[this.currentPlayer_].player.activateTurn(Player::TURN_FINISHED);
+			this.players_[this.currentPlayer_].player.activateTurn(TurnType.TURN_FINISHED);
 			break;
 		case GameState.STATE_PLAYING: {
 			const a = new Arrow(this.players_[this.currentPlayer_].arrows.slice(-1)[0].to, nextPoint);
@@ -255,18 +255,18 @@ export class Game {
 			// check if player went off the track
 			if (!this.track_.pointInsidePolygon(this.track_.grid().gridToWorld(nextPoint), 0)
 				|| this.track_.pointInsidePolygon(this.track_.grid().gridToWorld(nextPoint), 1)) {
-					if (!this.players_[this.currentPlayer_].isOffTrack) {
+					if (!this.players_[this.currentPlayer_].offtrackData.offTrack) {
 						// player is off track, set his speed to zero
-						this.players_[this.currentPlayer_].isOffTrack = true;
-						this.players_[this.currentPlayer_].trackCrossingIndex = this.track_.computeCrossingIndex(a.from, a.to);
-						this.players_[this.currentPlayer_].player.setOffTrackData(/*{true, this.players_[this.currentPlayer_].trackCrossingIndex}*/ ); // FIXME
+						this.players_[this.currentPlayer_].offtrackData.offTrack = true;
+						this.players_[this.currentPlayer_].offtrackData.contourIndex = this.track_.computeCrossingIndex(a.from, a.to);
+						this.players_[this.currentPlayer_].player.setOffTrackData(this.players_[this.currentPlayer_].offtrackData);
 						this.players_[this.currentPlayer_].arrows.push(new Arrow(nextPoint, nextPoint));
 						this.players_[this.currentPlayer_].player.setLastArrow(this.players_[this.currentPlayer_].arrows.slice(-1)[0]);
 					}
-			} else if (this.players_[this.currentPlayer_].isOffTrack) {
+			} else if (this.players_[this.currentPlayer_].offtrackData.offTrack) {
 				// player went back on track
-				this.players_[this.currentPlayer_].isOffTrack = false;
-				this.players_[this.currentPlayer_].player.setOffTrackData(/*{false, {-1, -1}}*/); // FIXME
+				this.players_[this.currentPlayer_].offtrackData.offTrack = false;
+				this.players_[this.currentPlayer_].player.setOffTrackData({offTrack: false, contourIndex: -1, position: -1});
 			}
 			// check if arrow crosses the infinite start-line outside of the track
 			let intersect: WorldPoint;
@@ -307,18 +307,18 @@ export class Game {
 			for (let i=-1; i<=1; i++)
 				for (let j=-1; j<=1; j++) {
 					const a = new Arrow(center.from, new GridPoint(center.to.x + j, center.to.y + i));
-					const maxLength = this.players_[this.currentPlayer_].isOffTrack ? 1 : 6;
+					const maxLength = this.players_[this.currentPlayer_].offtrackData.offTrack ? 1 : 6;
 					if (a.length() > maxLength)
 						continue;
 					if (!this.pathIsFree(a))
 						continue;
-					if (this.players_[this.currentPlayer_].isOffTrack) {
+					if (this.players_[this.currentPlayer_].offtrackData.offTrack) {
 						// player was off-track, must check if the current arrow would get him back on
 						// and if it does, only allow it if it re-enters the track behind his exit position
 						const arrowTipW: WorldPoint = this.track_.grid().gridToWorld(a.to);
 						if (this.track_.pointInsidePolygon(arrowTipW, 0) && !this.track_.pointInsidePolygon(arrowTipW, 1)) {
 							const crossIndex = this.track_.computeCrossingIndex(a.from, a.to);
-							if ((crossIndex.second - this.players_[this.currentPlayer_].trackCrossingIndex.position) * this.track_.polyDirection(crossIndex.first) > 0)
+							if ((crossIndex.second - this.players_[this.currentPlayer_].offtrackData.position) * this.track_.polyDirection(crossIndex.first) > 0)
 								continue;
 						}
 					}
