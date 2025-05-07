@@ -21,6 +21,13 @@ export type PlayerOfftrackData = {
 
 export class Player {
 	color: number;
+	offTrackData: PlayerOfftrackData = { offTrack: false, contourIndex: -1, position: -1 };
+	lastArrow = new Arrow(new GridPoint(0, 0), new GridPoint(0, 0));
+
+	private turn_ = TurnType.TURN_INACTIVE;
+	private hasAction_ = false;
+	private selectedPoint_ = new GridPoint(0, 0);
+	private allowedVectors_: Arrow[] = [];
 
 	constructor(public readonly type: PlayerType) {}
 
@@ -44,12 +51,6 @@ export class Player {
 	setAllowedVectors(vectors: Arrow[]): void {
 		this.allowedVectors_ = vectors;
 	}
-	setOffTrackData(data: PlayerOfftrackData): void {
-		this.offTrackData_ = data;
-	}
-	setLastArrow(arrow: Arrow): void {
-		this.lastArrow_ = arrow;
-	}
 	selectNextPoint(point: GridPoint): void {
 		this.selectedPoint_ = point;
 	}
@@ -66,18 +67,4 @@ export class Player {
 	validMoves(): Arrow[] {
 		return this.allowedVectors_;
 	}
-	lastArrow(): Arrow {
-		return this.lastArrow_;
-	}
-	offTrackData(): PlayerOfftrackData {
-		return this.offTrackData_;
-	}
-
-	private color_ = -1;
-	private turn_ = TurnType.TURN_INACTIVE;
-	private hasAction_ = false;
-	private selectedPoint_ = new GridPoint(0, 0);
-	private allowedVectors_: Arrow[] = [];
-	private lastArrow_ = new Arrow(new GridPoint(0, 0), new GridPoint(0, 0));
-	private offTrackData_: PlayerOfftrackData = { offTrack: false, contourIndex: -1, position: -1 };
 }

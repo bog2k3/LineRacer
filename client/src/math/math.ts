@@ -14,13 +14,9 @@ export interface IPoint {
 	y: number;
 }
 
-export class WorldPoint implements IPoint {
-	x = 0;
-	y = 0;
-
+export class WorldPoint extends Vector implements IPoint {
 	constructor(x: number, y: number) {
-		this.x = x;
-		this.y = y;
+		super(x, y);
 	}
 
 	toScreen(tr: Transform): ScreenPoint {
@@ -35,18 +31,15 @@ export class WorldPoint implements IPoint {
 		return Math.sqrt(xdif * xdif + ydif * ydif);
 	}
 
-	eq(p: WorldPoint): boolean {
-		return this.x == p.x && this.y == p.y;
+	assign(p: WorldPoint): void {
+		this.x = p.x;
+		this.y = p.y;
 	}
 }
 
-export class ScreenPoint implements IPoint {
-	x = 0;
-	y = 0;
-
+export class ScreenPoint extends Vector implements IPoint {
 	constructor(x: number, y: number) {
-		this.x = x;
-		this.y = y;
+		super(x, y);
 	}
 
 	toWorld(tr: Transform): WorldPoint {
@@ -56,17 +49,12 @@ export class ScreenPoint implements IPoint {
 	}
 }
 
-export class GridPoint {
-	/** x coordinate on grid */
-	x = 0;
-	/** y coordinate on grid */
-	y = 0;
+export class GridPoint extends Vector implements IPoint {
 	/** distance from actual pixel to the grid location, relative to grid size [0.0 .. sqrt(2)/2] */
 	distance = 0;
 
 	constructor(x: number, y: number, dist: number = 0) {
-		this.x = x;
-		this.y = y;
+		super(x, y);
 		this.distance = dist;
 	}
 

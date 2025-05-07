@@ -52,7 +52,7 @@ export class Track {
 		private readonly worldArea_: WorldArea,
 		private readonly resolution_: number,
 	) {
-		this.partition_ = new TrackPartition(this, PARTITION_CELL_SPAN);
+		this.partition_ = new TrackPartition(this.worldArea_, this.grid_, PARTITION_CELL_SPAN);
 	}
 
 	grid(): Grid {
@@ -92,9 +92,9 @@ export class Track {
 				this.floatingVertex_ == this.polyVertex_[this.currentPolyIdx_][0]
 			) {
 				const snapAnchorRadius = 3;
-				const anchor: ScreenPoint =
-					this.floatingVertex_.toScreen(this.grid_.getTransform()) -
-					new ScreenPoint(snapAnchorRadius, snapAnchorRadius);
+				const anchor: ScreenPoint = this.floatingVertex_
+					.toScreen(this.grid_.getTransform())
+					.subInPlace(new ScreenPoint(snapAnchorRadius, snapAnchorRadius));
 				// FIXME drawRectangleFilled()
 				// Shape2D::get().drawRectangleFilled(anchor, 0, {2*snapAnchorRadius+1, 2*snapAnchorRadius+1}, Colors::TRACK_SNAP);
 			}
@@ -107,7 +107,7 @@ export class Track {
 			for (let spos of this.startLine_.startPositions) {
 				const p1: ScreenPoint = this.grid_.gridToScreen(spos.position);
 				const p2: ScreenPoint = this.grid_.gridToScreen(
-					new ScreenPoint(spos.position.x + spos.direction.x, spos.position.y + spos.direction.y),
+					new GridPoint(spos.position.x + spos.direction.x, spos.position.y + spos.direction.y),
 				);
 				// FIXME drawArrow()
 				// Painter::paintArrow(p1, p2, 10 * this.grid_.getTransform().scale, M_PI/6, Colors::STARTLINE);
@@ -210,60 +210,60 @@ export class Track {
 
 	/** x and y are world-space coordinates */
 	pointerMoved(x: number, y: number): void {
-		if (!this.designMode_)
-			return;
+		if (!this.designMode_) return;
 		this.floatingVertex_.x = x;
 		this.floatingVertex_.y = y;
 		switch (this.designStep_) {
-		case TrackDesignStep.DRAW:
-			if (this.pointerPressed_
-				&& this.polyVertex_[this.currentPolyIdx_].length
-				&& this.validateVertex()
-			) {
-				// live drawing
-				const minDist = this.grid_.cellSize() / this.resolution_;
-				if (this.floatingVertex_.distanceTo(this.polyVertex_[this.currentPolyIdx_].slice(-1)[0]) >= minDist)
-					this.pushVertex();
-			} else {
-				this.checkCloseSnap();
-			}
-			break;
-		case TrackDesignStep.STARTLINE:
-			this.updateStartLine();
-			break;
+			case TrackDesignStep.DRAW:
+				if (this.pointerPressed_ && this.polyVertex_[this.currentPolyIdx_].length && this.validateVertex()) {
+					// live drawing
+					const minDist = this.grid_.cellSize() / this.resolution_;
+					if (this.floatingVertex_.distanceTo(this.polyVertex_[this.currentPolyIdx_].slice(-1)[0]) >= minDist)
+						this.pushVertex();
+				} else {
+					this.checkCloseSnap();
+				}
+				break;
+			case TrackDesignStep.STARTLINE:
+				this.updateStartLine();
+				break;
 		}
 	}
 
 	/** x and y are world-space coordinates */
 	pointerTouch(on: boolean, x: number, y: number): void {
-		if (!this.designMode_)
-			return;
+		if (!this.designMode_) return;
 		this.pointerPressed_ = on;
 		this.floatingVertex_.x = x;
 		this.floatingVertex_.y = y;
 		switch (this.designStep_) {
-		case TrackDesignStep.DRAW:
-			if (on && this.validateVertex()) {	// TODO: bug here - detecting false collision with first line segment (which should indeed touch at the end)
-				const closed: boolean = this.checkCloseSnap();
-				// add the next vertex
-				this.pushVertex();
+			case TrackDesignStep.DRAW:
+				if (on && this.validateVertex()) {
+					// TODO: bug here - detecting false collision with first line segment (which should indeed touch at the end)
+					const closed: boolean = this.checkCloseSnap();
+					// add the next vertex
+					this.pushVertex();
 
-				if (closed) {
-					this.polyOrientation_[this.currentPolyIdx_] = lineMath.clockwiseness(this.polyVertex_[this.currentPolyIdx_].data(), this.polyVertex_[this.currentPolyIdx_].length-1) > 0 ? +1 : -1;
-					if (this.currentPolyIdx_ == 0)
-						this.currentPolyIdx_++;
-					else
-					this.designStep_ = TrackDesignStep.STARTLINE; // go to next step
+					if (closed) {
+						this.polyOrientation_[this.currentPolyIdx_] =
+							lineMath.clockwiseness(
+								this.polyVertex_[this.currentPolyIdx_],
+								this.polyVertex_[this.currentPolyIdx_].length - 1,
+							) > 0
+								? +1
+								: -1;
+						if (this.currentPolyIdx_ == 0) this.currentPolyIdx_++;
+						else this.designStep_ = TrackDesignStep.STARTLINE; // go to next step
+					}
 				}
-			}
-			break;
-		case TrackDesignStep.STARTLINE:
-			if (on) {
-				this.updateStartLine();
-			} else if (this.startLine_.isValid) {
-				this.enableDesignMode(false);
-			}
-			break;
+				break;
+			case TrackDesignStep.STARTLINE:
+				if (on) {
+					this.updateStartLine();
+				} else if (this.startLine_.isValid) {
+					this.enableDesignMode(false);
+				}
+				break;
 		}
 	}
 
@@ -281,7 +281,53 @@ export class Track {
 	 * @param out_info: optional . intersection point and polygon index that was intersected will be stored in it
 	 */
 	intersectLine(p1: GridPoint, p2: GridPoint, out_info?: TrackIntersectInfo): boolean {
-		return this.intersectLine(this.grid_.gridToWorld(p1), this.grid_.gridToWorld(p2), false, out_info);
+		return this.intersectLineW(this.grid_.gridToWorld(p1), this.grid_.gridToWorld(p2), out_info, false);
+	}
+
+	/** @returns true if a line from point p1 to p2 intersects a track segment */
+	private intersectLineW(
+		p1: WorldPoint,
+		p2: WorldPoint,
+		out_info?: TrackIntersectInfo,
+		skipLastSegment = false,
+	): boolean {
+		const topLeft = new WorldPoint(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y));
+		const bottomRight = new WorldPoint(Math.max(p1.x, p2.x), Math.max(p1.y, p2.y));
+		const vertices: Set<[number, number]> = this.partition_.getVerticesInArea(topLeft, bottomRight);
+		for (const v of vertices) {
+			const polyIdx: number = v[0];
+			const vIdx: number = v[1];
+			if (
+				skipLastSegment &&
+				polyIdx == this.currentPolyIdx_ &&
+				vIdx + 2 == this.polyVertex_[this.currentPolyIdx_].length
+			) {
+				continue; // we're not checking against last segment because that one is connected
+			}
+			if (vIdx + 1 < this.polyVertex_[polyIdx].length) {
+				// check line following vertex
+				if (
+					lineMath.segmentIntersect(
+						p1,
+						p2,
+						this.polyVertex_[polyIdx][vIdx],
+						this.polyVertex_[polyIdx][vIdx + 1],
+					)
+				) {
+					if (out_info) {
+						out_info.point = lineMath.intersectionPoint(
+							p1,
+							p2,
+							this.polyVertex_[polyIdx][vIdx],
+							this.polyVertex_[polyIdx][vIdx + 1],
+						);
+						out_info.polyIndex = polyIdx;
+					}
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	/** @returns the number of points in which the arrow intersects the track polygons */
@@ -290,22 +336,23 @@ export class Track {
 		const wp2: WorldPoint = this.grid_.gridToWorld(p2);
 		const topLeft = new WorldPoint(Math.min(wp1.x, wp2.x), Math.min(wp1.y, wp2.y));
 		const bottomRight = new WorldPoint(Math.max(wp1.x, wp2.x), Math.max(wp1.y, wp2.y));
-		const vertices: WorldPoint[] = this.partition_.getVerticesInArea(topLeft, bottomRight);
+		const vertices: Set<[number, number]> = this.partition_.getVerticesInArea(topLeft, bottomRight);
 		let count = 0;
 		for (let v of vertices) {
-			const polyIdx: number = v.x;
-			const vIdx: number = v.y;
-			if (vIdx + 1 == this.polyVertex_[polyIdx].length)
-				continue;	// this was the last vertex, we skip it
+			const polyIdx: number = v[0];
+			const vIdx: number = v[1];
+			if (vIdx + 1 == this.polyVertex_[polyIdx].length) continue; // this was the last vertex, we skip it
 			// we check forward, from this vertex to the next
 			const v1: WorldPoint = this.polyVertex_[polyIdx][vIdx];
-			const v2: WorldPoint = this.polyVertex_[polyIdx][vIdx+1];
+			const v2: WorldPoint = this.polyVertex_[polyIdx][vIdx + 1];
 			const res: lineMath.IntersectionResult = lineMath.segmentIntersect(v1, v2, wp1, wp2);
-			if (res == lineMath.IntersectionResult.INTERSECT_NONE || res == lineMath.IntersectionResult.INTERSECT_OVERLAP)
+			if (
+				res == lineMath.IntersectionResult.INTERSECT_NONE ||
+				res == lineMath.IntersectionResult.INTERSECT_OVERLAP
+			)
 				continue;
 			let consider = false;
-			if (res == lineMath.IntersectionResult.INTERSECT_MIDDLE)
-				consider = true;
+			if (res == lineMath.IntersectionResult.INTERSECT_MIDDLE) consider = true;
 			else if (res == lineMath.IntersectionResult.INTERSECT_ENDPOINT1)
 				// v1 is on wp1.wp2 we count it only if the line is going downward
 				consider = v2.y > v1.y;
@@ -313,8 +360,7 @@ export class Track {
 				// v2 is on wp1.wp2, we count it only if the line is going upward
 				consider = v2.y < v1.y;
 
-			if (consider)
-				count++;
+			if (consider) count++;
 		}
 		return count;
 	}
@@ -322,33 +368,33 @@ export class Track {
 	/** @returns true if the point is inside the closed polygon */
 	pointInsidePolygon(p: WorldPoint, polyIndex: number): boolean {
 		assert(polyIndex >= 0 && polyIndex <= 1);
-		if (this.polyVertex_[polyIndex].length < 3)
-			return false;
-		if (!this.worldArea_.containsPoint(p))
-			return false;
+		if (this.polyVertex_[polyIndex].length < 3) return false;
+		if (!this.worldArea_.containsPoint(p)) return false;
 		const polyOrientation: number = this.polyOrientation_[polyIndex];
 		// draw an imaginary horizontal line from the left limit of worldArea through point p
 		// then see how many edges from the test polygon it intersects
 		// odd means point is inside, even means it's outside
-		const start = new WorldPoint(this.grid_.gridToWorld(this.worldArea_.topLeft()).x-1, p.y);
-		const verts: WorldPoint[] = this.partition_.getVerticesInArea({start.x, p.y-1}, {p.x+1, p.y + 1});
-		// FIXME vertx.x is the poly index, and verts.y is hte offset within that poly
+		const start = new WorldPoint(this.grid_.gridToWorld(this.worldArea_.topLeft()).x - 1, p.y);
+		const verts: Set<[number, number]> = this.partition_.getVerticesInArea(
+			new WorldPoint(start.x, p.y - 1),
+			new WorldPoint(p.x + 1, p.y + 1),
+		);
 		let wn = 0;
 		for (const v of verts) {
-			if (v.x != polyIndex)
-				continue;
+			if (v[0] != polyIndex) continue;
 			// test edge before vertex
-			if (v.y > 0) {
-				const v1: WorldPoint = this.polyVertex_[polyIndex][v.y - 1];
-				const v2: WorldPoint = this.polyVertex_[polyIndex][v.y];
-				if (v1.x >= p.x && v2.x >= p.x)
-					continue;
+			if (v[1] > 0) {
+				const v1: WorldPoint = this.polyVertex_[polyIndex][v[1] - 1];
+				const v2: WorldPoint = this.polyVertex_[polyIndex][v[1]];
+				if (v1.x >= p.x && v2.x >= p.x) continue;
 				const res: lineMath.IntersectionResult = lineMath.segmentIntersect(v1, v2, start, p);
-				if (res == lineMath.IntersectionResult.INTERSECT_NONE || res == lineMath.IntersectionResult.INTERSECT_OVERLAP)
+				if (
+					res == lineMath.IntersectionResult.INTERSECT_NONE ||
+					res == lineMath.IntersectionResult.INTERSECT_OVERLAP
+				)
 					continue;
 				let count = false;
-				if (res == lineMath.IntersectionResult.INTERSECT_MIDDLE)
-					count = true;
+				if (res == lineMath.IntersectionResult.INTERSECT_MIDDLE) count = true;
 				else if (res == lineMath.IntersectionResult.INTERSECT_ENDPOINT1)
 					// v1 is on the horizontal line, we count it only if the line is going downward
 					count = v2.y > v1.y;
@@ -356,8 +402,7 @@ export class Track {
 					// v2 is on the horizontal line, we count it only if the line is going upward
 					count = v2.y < v1.y;
 
-				if (!count)
-					continue;
+				if (!count) continue;
 				const side = lineMath.orientation(v1, v2, p);
 				wn += side == polyOrientation ? +1 : -1;
 			}
@@ -375,12 +420,11 @@ export class Track {
 		const wp2: WorldPoint = this.grid_.gridToWorld(p2);
 		const topLeft = new WorldPoint(Math.min(wp1.x, wp2.x), Math.min(wp1.y, wp2.y));
 		const bottomRight = new WorldPoint(Math.max(wp1.x, wp2.x), Math.max(wp1.y, wp2.y));
-		const verts: Vector[] = this.partition_.getVerticesInArea(topLeft, bottomRight);
+		const verts: Set<[number, number]> = this.partition_.getVerticesInArea(topLeft, bottomRight);
 		for (const v of verts) {
-			const pIndex = v.x;
-			const vIndex = v.y;
-			if (vIndex + 1 == this.polyVertex_[pIndex].length)
-				continue;
+			const pIndex = v[0];
+			const vIndex = v[1];
+			if (vIndex + 1 == this.polyVertex_[pIndex].length) continue;
 			const sp1: WorldPoint = this.polyVertex_[pIndex][vIndex];
 			const sp2: WorldPoint = this.polyVertex_[pIndex][vIndex + 1];
 			if (lineMath.segmentIntersect(sp1, sp2, wp1, wp2)) {
@@ -401,8 +445,7 @@ export class Track {
 	 */
 	polyDirection(polyIndex: number): number {
 		assert(polyIndex <= 1);
-		if (!this.startLine_.isValid)
-			return 0;
+		if (!this.startLine_.isValid) return 0;
 		return this.polyOrientation_[polyIndex] == this.startLine_.orientation ? +1 : -1;
 	}
 
@@ -436,14 +479,19 @@ export class Track {
 		} else {
 			res = lineMath.segmentIntersect(fw, tw, this.startLine_.p1, this.startLine_.p2);
 		}
-		if (res == lineMath.IntersectionResult.INTERSECT_NONE || res == lineMath.IntersectionResult.INTERSECT_OVERLAP || res == lineMath.IntersectionResult.INTERSECT_ENDPOINT1) {
+		if (
+			res == lineMath.IntersectionResult.INTERSECT_NONE ||
+			res == lineMath.IntersectionResult.INTERSECT_OVERLAP ||
+			res == lineMath.IntersectionResult.INTERSECT_ENDPOINT1
+		) {
 			return 0;
 		}
 		if (out_point) {
 			out_point.assign(lineMath.intersectionPoint(fw, tw, this.startLine_.p1, this.startLine_.p2, extended));
 		}
-		const dot = (to.x - from.x) * this.startLine_.startPositions[0].direction.x +
-				(to.y - from.y) * this.startLine_.startPositions[0].direction.y;
+		const dot =
+			(to.x - from.x) * this.startLine_.startPositions[0].direction.x +
+			(to.y - from.y) * this.startLine_.startPositions[0].direction.y;
 		return dot > 0 ? +1 : -1;
 	}
 
@@ -451,8 +499,9 @@ export class Track {
 
 	private checkCloseSnap(): boolean {
 		// if the floating vertex comes to within a grid square of the starting point, snap it to close the loop
-		if (this.polyVertex_[this.currentPolyIdx_].length > 2
-			&& this.floatingVertex_.distanceTo(this.polyVertex_[this.currentPolyIdx_][0]) < this.grid_.cellSize()
+		if (
+			this.polyVertex_[this.currentPolyIdx_].length > 2 &&
+			this.floatingVertex_.distanceTo(this.polyVertex_[this.currentPolyIdx_][0]) < this.grid_.cellSize()
 		) {
 			this.floatingVertex_ = this.polyVertex_[this.currentPolyIdx_][0];
 			return true;
@@ -466,20 +515,17 @@ export class Track {
 		// also checks that the new line segment won't intersect any existing line segments
 
 		// check world boundary:
-		if (!this.worldArea_.containsPoint(this.floatingVertex_))
-			return false;
+		if (!this.worldArea_.containsPoint(this.floatingVertex_)) return false;
 
 		// check intersection:
 		if (this.polyVertex_[this.currentPolyIdx_].length) {
 			const prevVertex: WorldPoint = this.polyVertex_[this.currentPolyIdx_].slice(-1)[0];
-			if (this.intersectLine(prevVertex, this.floatingVertex_, true))
-				return false;
+			if (this.intersectLineW(prevVertex, this.floatingVertex_, undefined, true)) return false;
 		}
 
 		// check second contour to be inside first:
 		if (this.currentPolyIdx_ == 1 && this.polyVertex_[1].length == 0) {
-			if (!this.pointInsidePolygon(this.floatingVertex_, 0))
-				return false;
+			if (!this.pointInsidePolygon(this.floatingVertex_, 0)) return false;
 		}
 
 		return true;
@@ -489,51 +535,31 @@ export class Track {
 		const crtIndex: number = this.polyVertex_[this.currentPolyIdx_].length;
 		this.partition_.addVertex([this.currentPolyIdx_, crtIndex], this.floatingVertex_);
 		if (crtIndex > 0) {
-			this.partition_.addSegment([this.currentPolyIdx_, [crtIndex-1, crtIndex]], this.polyVertex_[this.currentPolyIdx_].slice(-1)[0], this.floatingVertex_);
+			this.partition_.addSegment(
+				[this.currentPolyIdx_, [crtIndex - 1, crtIndex]],
+				this.polyVertex_[this.currentPolyIdx_].slice(-1)[0],
+				this.floatingVertex_,
+			);
 		}
 		this.polyVertex_[this.currentPolyIdx_].push(this.floatingVertex_);
-	}
-
-	/** @returns true if a line from point p1 to p2 intersects a track segment */
-	private intersectLine(
-		p1: WorldPoint,
-		p2: WorldPoint,
-		skipLastSegment: boolean,
-		out_info: TrackIntersectInfo,
-	): boolean {
-		const topLeft = new WorldPoint(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y));
-		const bottomRight = new WorldPoint(Math.max(p1.x, p2.x), Math.max(p1.y, p2.y));
-		const vertices: WorldPoint[] = this.partition_.getVerticesInArea(topLeft, bottomRight);
-		for (const v of vertices) {
-			const polyIdx: number = v.x;
-			const vIdx: number = v.y;
-			if (skipLastSegment && polyIdx == this.currentPolyIdx_ && vIdx + 2 == this.polyVertex_[this.currentPolyIdx_].length) {
-				continue; // we're not checking against last segment because that one is connected
-			}
-			if (vIdx + 1 < this.polyVertex_[polyIdx].length) {
-				// check line following vertex
-				if (lineMath.segmentIntersect(p1, p2, this.polyVertex_[polyIdx][vIdx], this.polyVertex_[polyIdx][vIdx+1])) {
-					if (out_point)
-						*out_point = lineMath.intersectionPoint(p1, p2, this.polyVertex_[polyIdx][vIdx], this.polyVertex_[polyIdx][vIdx+1]);
-					if (out_polyIndex)
-						*out_polyIndex = polyIdx;
-					return true;
-				}
-			}
-		}
-		return false;
 	}
 
 	private updateStartLine(): void {
 		this.startLine_.isValid = false;
 		const touch: GridPoint = this.grid_.worldToGrid(this.floatingVertex_);
-		if (!this.pointInsidePolygon(this.grid_.gridToWorld(touch), 0) || this.pointInsidePolygon(this.grid_.gridToWorld(touch), 1)) {
+		if (
+			!this.pointInsidePolygon(this.grid_.gridToWorld(touch), 0) ||
+			this.pointInsidePolygon(this.grid_.gridToWorld(touch), 1)
+		) {
 			return;
 		}
 
 		// sweep all 4 possible directions and chose the one that intersects both polygons at the shortest distance
 		const directions: number[][] = [
-			[1, 0], [0, 1], [1, 1], [-1, 1]
+			[1, 0],
+			[0, 1],
+			[1, 1],
+			[-1, 1],
 		];
 		const intersections: {
 			steps: number;
@@ -542,56 +568,64 @@ export class Track {
 			p1: WorldPoint;
 			p2: WorldPoint;
 		}[] = new Array(4);
-		for (let i=0; i<4; i++) {
-			intersections[i].steps = 0;
-			for (let j=-1; j<=1; j+=2) {
+		for (let i = 0; i < 4; i++) {
+			intersections[i] = {
+				steps: 0,
+				distance: 0,
+				polyId: -1,
+				p1: new WorldPoint(0, 0),
+				p2: new WorldPoint(0, 0),
+			};
+			for (let j = -1; j <= 1; j += 2) {
 				// when j==1 we sweep positive, j==-1 we sweep negative
 				const p: GridPoint = touch;
-				let lastPolyIdx = -1;
+				const tIntersect: TrackIntersectInfo = {
+					point: null,
+					polyIndex: -1,
+				};
 				do {
 					p.x += directions[i][0] * j;
 					p.y += directions[i][1] * j;
 					intersections[i].steps++;
-				} while (!this.intersectLine(touch, p, j==-1 ? &intersections[i].p1 : &intersections[i].p2, &lastPolyIdx));
-				if (j==-1)
-					intersections[i].polyId = lastPolyIdx;
-				else if (intersections[i].polyId == lastPolyIdx) {
+					tIntersect.point = j == -1 ? intersections[i].p1 : intersections[i].p2;
+				} while (!this.intersectLine(touch, p, tIntersect));
+				if (j == -1) intersections[i].polyId = tIntersect.polyIndex;
+				else if (intersections[i].polyId == tIntersect.polyIndex) {
 					intersections[i].steps = 10000; // we don't count this one if it doesn't intersect both polygons
 				}
 			}
 			intersections[i].distance = intersections[i].steps;
-			if (i>=2)
-				intersections[i].distance *= 1.41f;	// because last two are diagonals
+			if (i >= 2) intersections[i].distance *= 1.4142; // because last two are diagonals
 		}
 		let imin = 0;
-		for (let i=1; i<4; i++) {
-			if (intersections[i].distance < intersections[imin].distance)
-				imin = i;
+		for (let i = 1; i < 4; i++) {
+			if (intersections[i].distance < intersections[imin].distance) imin = i;
 		}
-		if (intersections[imin].steps == 10000)
-			return; // no valid start line found
+		if (intersections[imin].steps == 10000) return; // no valid start line found
 		this.startLine_.isValid = true;
 		this.startLine_.p1 = intersections[imin].p1;
 		this.startLine_.p2 = intersections[imin].p2;
 		// compute start line orientation:
-		const outer: WorldPoint = intersections[imin].polyId == 0 ? this.startLine_.p1 : this.startLine_.p2;	// intersection point on outer polygon
-		const inner: WorldPoint = intersections[imin].polyId == 0 ? this.startLine_.p2 : this.startLine_.p1;	// intersection point on inner polygon
+		const outer: WorldPoint = intersections[imin].polyId == 0 ? this.startLine_.p1 : this.startLine_.p2; // intersection point on outer polygon
+		const inner: WorldPoint = intersections[imin].polyId == 0 ? this.startLine_.p2 : this.startLine_.p1; // intersection point on inner polygon
 		this.startLine_.orientation = lineMath.orientation(inner, outer, this.floatingVertex_);
 		// compute valid starting arrows:
 		this.startLine_.startPositions = [];
 		const p: GridPoint = this.grid_.worldToGrid(this.startLine_.p1);
-		for (let i=0; i<intersections[imin].steps; p.x+=directions[imin][0], p.y+=directions[imin][1], i++) {
-			if (!this.pointInsidePolygon(this.grid_.gridToWorld(p), 0) || this.pointInsidePolygon(this.grid_.gridToWorld(p), 1))
+		for (let i = 0; i < intersections[imin].steps; p.x += directions[imin][0], p.y += directions[imin][1], i++) {
+			if (
+				!this.pointInsidePolygon(this.grid_.gridToWorld(p), 0) ||
+				this.pointInsidePolygon(this.grid_.gridToWorld(p), 1)
+			)
 				continue;
-			const CW: boolean = lineMath.orientation(intersections[imin].p1, intersections[imin].p2, this.floatingVertex_) == 1;
+			const CW: boolean =
+				lineMath.orientation(intersections[imin].p1, intersections[imin].p2, this.floatingVertex_) == 1;
 			const dirx: number = directions[imin][1] * (CW ? 1 : -1);
 			const diry: number = directions[imin][0] * (CW ? -1 : 1);
-			if (!this.intersectLine(p, {p.x + dirx, p.y + diry})) {
+			if (!this.intersectLine(p, new GridPoint(p.x + dirx, p.y + diry))) {
 				// this is a valid start position and direction
-				this.startLine_.startPositions.push({p, {dirx, diry}});
+				this.startLine_.startPositions.push({ position: p, direction: new Vector(dirx, diry) });
 			}
 		}
 	}
 }
-
-#endif; //__TRACK_H__

@@ -24,7 +24,7 @@ export class Vector {
 		return new Vector(this.x, this.y, this.z, this.w);
 	}
 
-	equals(v: Vector): boolean {
+	equals(v: this): boolean {
 		return this.x === v.x && this.y === v.y && this.z === v.z && this.w === v.w;
 	}
 
@@ -51,11 +51,11 @@ export class Vector {
 		return this;
 	}
 
-	add(v: Vector): Vector {
+	add(v: this): Vector {
 		return this.copy().addInPlace(v);
 	}
 
-	addInPlace(v: Vector): this {
+	addInPlace(v: this): this {
 		this.x += v.x;
 		this.y += v.y;
 		this.z += v.z;
@@ -63,11 +63,11 @@ export class Vector {
 		return this;
 	}
 
-	sub(v: Vector): Vector {
+	sub(v: this): Vector {
 		return this.copy().subInPlace(v);
 	}
 
-	subInPlace(v: Vector): this {
+	subInPlace(v: this): this {
 		this.x -= v.x;
 		this.y -= v.y;
 		this.z -= v.z;
@@ -114,7 +114,7 @@ export class Vector {
 	 * and Left Hand rule in LHCS.
 	 * In fact Z always equals X cross Y no matter what
 	 */
-	cross(v: Vector): Vector {
+	cross(v: this): Vector {
 		// prettier-ignore
 		return new Vector(
 			this.y * v.z - this.z * v.y,
@@ -123,7 +123,7 @@ export class Vector {
 		);
 	}
 
-	lerp(v: Vector, f: number): Vector {
+	lerp(v: this, f: number): Vector {
 		return new Vector(lerp(this.x, v.x, f), lerp(this.y, v.y, f), lerp(this.z, v.z, f), lerp(this.w, v.w, f));
 	}
 

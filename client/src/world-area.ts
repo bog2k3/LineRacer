@@ -1,3 +1,4 @@
+import { Grid } from "./grid";
 import { GridPoint, ScreenPoint, WorldPoint } from "./math/math";
 import { Vector } from "./math/vector";
 
