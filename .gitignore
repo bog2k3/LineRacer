@@ -2,3 +2,7 @@
 node_modules
 client/node_modules
 server/node_modules
+www/dist
+client/build
+
+client/tsconfig.tsbuildinfo

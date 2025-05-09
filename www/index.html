@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Webmageddon 1.0</title>
+		<title>Line Racer</title>
 	</head>
 	<body style="text-align: center; position: relative">
 		<div id="canvas-container">
-			<canvas id="canvas3d" class="canvas" width="1280" height="720">
+			<canvas id="canvas" class="canvas" width="1280" height="720">
 				Browserul tău nu suportă Canvas, viața-i grea.
 			</canvas>
 			<div id="gui-container" class="canvas" style="z-index: 1;">
-				<canvas id="canvas2d" class="canvas" width="1280" height="720" tabindex="0"></canvas>
 				<div id="dialog-player-name">
 					<div class="dialog-title">Bagă-ți numele:</div>
 					<p id="name-taken">Numele este deja luat, incearcă altul.</p>
@@ -23,72 +22,17 @@
 					<div class="spinner"></div>
 					<h4>Jocul se incarcă, așteaptă...</h4>
 				</div>
-				<div id="terrain-config-panel">
+				<div id="track-design-panel">
 					<div id="master-label" class="master-only">
-						<h3>TU ești bossul care configurează harta.</h3>
-						<p>Folosește controalele de mai jos pentru a ajusta parametrii.</p>
+						<h3>TU ești bossul care deseneaza traseul.</h3>
+						<p>Folosește mausul ca sa desenezi.</p>
 					</div>
 					<div id="slave-label" class="slave-only">
-						<h4>Altcineva configurează harta, stai și privește.</h4>
+						<h4>Altcineva deseneaza traseul, stai și privește.</h4>
 					</div>
-					<label for="seed">Seed:</label>
-					<br>
-					<input id="seed" type="number">
-					<button id="random-seed" class="master-only">Random</button>
-					<br><br>
-					<label for="min-elevation">Elevație minimă:</label>
-					<br>
-					<input id="min-elevation" type="range" min="-10" max="-1" list="min-elevation-list">
-					<input id="min-elevation-value" readonly="true" class="value-display">
-					<datalist id="min-elevation-list">
-						<option value="-10" label="-10"></option>
-						<option value="-5" label="-5"></option>
-						<option value="-1" label="-1"></option>
-					</datalist>
-					<br>
-					<label for="max-elevation">Elevație maximă:</label>
-					<br>
-					<input id="max-elevation" type="range" min="10" max="70" list="max-elevation-list">
-					<input id="max-elevation-value" readonly="true" class="value-display">
-					<datalist id="max-elevation-list">
-						<option value="10" label="10"></option>
-						<option value="30" label="30"></option>
-						<option value="50" label="50"></option>
-						<option value="70" label="70"></option>
-					</datalist>
-					<br>
-					<label for="variation">Variație:</label>
-					<br>
-					<input id="variation" type="range" min="0.0" max="1.0" step="0.1" list="variation-list">
-					<input id="variation-value" readonly="true" class="value-display">
-					<datalist id="variation-list">
-						<option value="0" label="0.0"></option>
-						<option value="0.2" label="0.2"></option>
-						<option value="0.4" label="0.4"></option>
-						<option value="0.6" label="0.6"></option>
-						<option value="0.8" label="0.8"></option>
-						<option value="1.0" label="1.0"></option>
-					</datalist>
-					<br>
-					<label for="roughness">Zgrunțuroșenie:</label>
-					<br>
-					<input id="roughness" type="range" min="0.0" max="1.0" step="0.1" list="roughness-list">
-					<input id="roughness-value" readonly="true" class="value-display">
-					<datalist id="roughness-list">
-						<option value="0" label="0.0"></option>
-						<option value="0.2" label="0.2"></option>
-						<option value="0.4" label="0.4"></option>
-						<option value="0.6" label="0.6"></option>
-						<option value="0.8" label="0.8"></option>
-						<option value="1.0" label="1.0"></option>
-					</datalist>
-					<br>
-					<br><br>
-					<button type="button" id="randomize-all" class="button-big master-only">Fa-le la nimereală</button>
-					<br><br>
 					<hr>
 					<br>
-					<button type="button" id="start-game" class="button-big button-primary master-only">Ajunge, să-i dăm bice!</button>
+					<button type="button" id="start-game" class="button-big button-primary master-only">Gata, să-i dăm bice!</button>
 				</div>
 				<div id="ingame-menu">
 					<button type="button" id="btn-continue" class="button-large"><strong>Întoarce-te la joc</strong></button>
@@ -96,7 +40,7 @@
 					<button type="button" id="btn-spectate" class="button-large">Mod spectator</button>
 					<button type="button" id="btn-join" class="button-large">Intra in joc</button>
 					<hr>
-					<button type="button" id="btn-change-config" class="button-large">Schimbă harta</button>
+					<button type="button" id="btn-change-config" class="button-large">Schimbă traseul</button>
 				</div>
 			</div>
 		</div>

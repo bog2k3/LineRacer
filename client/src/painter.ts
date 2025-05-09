@@ -39,5 +39,3 @@ export namespace Paint {
 		// Shape2D::get()->drawLine(to, pR, 0.f, c);
 	}
 }
-
-#endif;

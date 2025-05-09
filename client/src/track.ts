@@ -187,15 +187,6 @@ export class Track {
 		// #endif
 	}
 
-	/**  clears the track */
-	reset(): void {
-		this.currentPolyIdx_ = 0;
-		this.polyVertex_[0] = [];
-		this.polyVertex_[1] = [];
-		this.partition_.clear();
-		this.startLine_.isValid = false;
-	}
-
 	enableDesignMode(enable: boolean): void {
 		this.currentPolyIdx_ = 0;
 		this.designMode_ = enable;

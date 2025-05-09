@@ -2,7 +2,7 @@ import { GridPoint, ScreenPoint, Transform, WorldPoint } from "./math/math";
 import { fmod } from "./math/functions";
 
 export class Grid {
-	private tr_: Transform;
+	private tr_ = new Transform();
 
 	constructor(private readonly size_: number, private readonly winW_: number, private readonly winH_: number) {}
 

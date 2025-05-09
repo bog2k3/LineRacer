@@ -1,13 +1,9 @@
 import { io, Socket } from "socket.io-client";
-import { logprefix } from "../joglfw/log";
-import { Event } from "../../src/utils/event";
+import { logprefix } from "../utils/log";
+import { Event } from "../utils/event";
 import { ClientState } from "./dto/client-state.enum";
 import { SPlayerInfo } from "./dto/s-player-info.dto";
 import { SocketMessage } from "./dto/socket-message";
-import { CNetworkEntityCreatedDTO, SNetworkEntityCreatedDTO } from "./dto/network-entity-created.dto";
-import { NetworkEntityUpdatedDTO } from "./dto/network-entity-updated.dto";
-import { NetworkEntityDestroyedDTO } from "./dto/network-entity-destroyed.dto";
-import { SNetworkIdResolvedDTO } from "./dto/network-id-resolved.dto";
 
 const console = logprefix("WebSock");
 let socket: Socket;
@@ -15,17 +11,13 @@ let socket: Socket;
 export namespace WebSock {
 	export let ENABLE_LOGGING_ALL = false;
 	export const onNameTaken = new Event<() => void>();
-	export const onMapConfigReceived = new Event<(config: TerrainConfig) => void>();
 	export const onStartConfig = new Event<(isMaster: boolean) => void>();
 	export const onStartGame = new Event<() => void>();
 	export const onPlayerConnected = new Event<(data: { name: string }) => void>();
 	export const onPlayerDisconnected = new Event<(data: { name: string }) => void>();
 	export const onPlayerListReceived = new Event<(list: SPlayerInfo[]) => void>();
 	export const onPlayerStateChanged = new Event<(data: SPlayerInfo) => void>();
-	export const onEntityCreated = new Event<(data: SNetworkEntityCreatedDTO) => void>();
-	export const onEntityUpdated = new Event<(data: NetworkEntityUpdatedDTO) => void>();
-	export const onEntityDestroyed = new Event<(data: NetworkEntityDestroyedDTO) => void>();
-	export const onNetworkEntityIdResolved = new Event<(data: SNetworkIdResolvedDTO) => void>();
+	export const onMapConfigReceived = new Event<(cfg: any) => void>();
 
 	export function init(): void {
 		socket = io({
@@ -60,18 +52,6 @@ export namespace WebSock {
 		socket.send(SocketMessage.C_STATE_CHANGED, state);
 	}
 
-	export function sendEntityCreated(dto: CNetworkEntityCreatedDTO): void {
-		socket.send(SocketMessage.CS_ENTITY_CREATED, dto);
-	}
-
-	export function sendEntityUpdated(dto: NetworkEntityUpdatedDTO): void {
-		socket.send(SocketMessage.CS_ENTITY_UPDATED, dto);
-	}
-
-	export function sendEntityDestroyed(dto: NetworkEntityDestroyedDTO): void {
-		socket.send(SocketMessage.CS_ENTITY_DESTROYED, dto);
-	}
-
 	// -------------------------------------------- PRIVATE AREA ----------------------------------------------- //
 
 	const messageMap: { [key in SocketMessage]?: (payload: any) => void } = {};
@@ -86,10 +66,6 @@ export namespace WebSock {
 		messageMap[SocketMessage.S_PLAYER_STATE_CHANGED] = (payload) => onPlayerStateChanged.trigger(payload);
 		messageMap[SocketMessage.S_PLAYER_LIST] = (payload) => onPlayerListReceived.trigger(payload);
 		messageMap[SocketMessage.S_NAME_TAKEN] = () => onNameTaken.trigger();
-		messageMap[SocketMessage.CS_ENTITY_CREATED] = (payload) => onEntityCreated.trigger(payload);
-		messageMap[SocketMessage.CS_ENTITY_UPDATED] = (payload) => onEntityUpdated.trigger(payload);
-		messageMap[SocketMessage.CS_ENTITY_DESTROYED] = (payload) => onEntityDestroyed.trigger(payload);
-		messageMap[SocketMessage.S_NETWORK_ID_RESOLVED] = (payload) => onNetworkEntityIdResolved.trigger(payload);
 	}
 
 	function handleMessageFromServer(message: SocketMessage, payload: any): void {

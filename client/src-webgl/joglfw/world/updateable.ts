@@ -3,5 +3,5 @@ export interface IUpdatable {
 }
 
 export function isUpdatable(x): x is IUpdatable {
-	return "update" in x;
+	return "update" in x && typeof x["update"] === "function";
 }

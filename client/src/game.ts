@@ -8,10 +8,11 @@ import { Event } from "./utils/event";
 import { randi } from "./utils/random";
 
 export enum GameState {
-	STATE_WAITING_PLAYERS,
-	STATE_START_SELECTION,
-	STATE_PLAYING,
-	STATE_STOPPED,
+	WAITING_PLAYERS,
+	START_SELECTION,
+	PLAYING,
+	STOPPED,
+	SPECTATE,
 }
 
 class PlayerInfo {
@@ -27,7 +28,7 @@ class PlayerInfo {
 export class Game {
 	private playerInfo_: PlayerInfo[] = [];
 	private startPosTaken_: boolean[] = [];
-	private state_ = GameState.STATE_WAITING_PLAYERS;
+	private state_ = GameState.WAITING_PLAYERS;
 	private currentPlayer_ = 0;
 	private turnTimer_ = 0;
 
@@ -57,15 +58,15 @@ export class Game {
 
 	update(dt: number): void {
 		switch (this.state_) {
-			case GameState.STATE_WAITING_PLAYERS:
+			case GameState.WAITING_PLAYERS:
 				if (this.playerInfo_.length == this.track_.getStartPositions().length)
 					// all positions have been filled, start automatically
 					this.start();
 				return;
-			case GameState.STATE_STOPPED:
+			case GameState.STOPPED:
 				return;
-			case GameState.STATE_START_SELECTION:
-			case GameState.STATE_PLAYING:
+			case GameState.START_SELECTION:
+			case GameState.PLAYING:
 				this.turnTimer_ += dt;
 				if (this.turnTimer_ >= this.turnTimeLimit_ || this.currentPlayer().actionReady()) {
 					// perform action for player, then move on to the next turn
@@ -76,7 +77,7 @@ export class Game {
 	}
 
 	draw(): void {
-		if (this.state_ != GameState.STATE_START_SELECTION && this.state_ != GameState.STATE_PLAYING) return;
+		if (this.state_ != GameState.START_SELECTION && this.state_ != GameState.PLAYING) return;
 		const colors: Color[] = [Colors.PLAYER1, Colors.PLAYER2, Colors.PLAYER3, Colors.PLAYER4, Colors.PLAYER5];
 		for (
 			let i = (this.currentPlayer_ + 1) % this.playerInfo_.length, n = 0;
@@ -94,13 +95,13 @@ export class Game {
 
 	/** resets the entire game, and removes all players */
 	reset(): void {
-		if (this.state_ != GameState.STATE_STOPPED) this.stop();
+		if (this.state_ != GameState.STOPPED) this.stop();
 		this.playerInfo_.splice(0, this.playerInfo_.length);
 		this.startPosTaken_.splice(0, this.startPosTaken_.length);
 		this.currentPlayer_ = 0;
 		this.turnTimer_ = 0;
 
-		this.setState(GameState.STATE_WAITING_PLAYERS);
+		this.setState(GameState.WAITING_PLAYERS);
 	}
 
 	/** @returns true if player was added and false if it couldn't be added (session is full) */
@@ -116,10 +117,10 @@ export class Game {
 	}
 
 	start(): void {
-		if (this.state_ != GameState.STATE_STOPPED && this.state_ != GameState.STATE_WAITING_PLAYERS)
+		if (this.state_ != GameState.STOPPED && this.state_ != GameState.WAITING_PLAYERS)
 			throw new Error("Game already started!");
 		this.startPosTaken_.fill(false, 0, this.track_.getStartPositions().length);
-		this.setState(GameState.STATE_START_SELECTION);
+		this.setState(GameState.START_SELECTION);
 		this.currentPlayer_ = -1;
 		this.nextTurn();
 	}
@@ -171,14 +172,14 @@ export class Game {
 		return this.track_.pointInsidePolygon(wp, 0) && !this.track_.pointInsidePolygon(wp, 1);
 	}
 
-	private setState(state: GameState): void {
+	setState(state: GameState): void {
 		this.state_ = state;
 		this.onStateChange.trigger(state);
 	}
 
 	private nextTurn(): void {
-		if (this.playerInfo_.length == 0) this.setState(GameState.STATE_STOPPED);
-		if (this.state_ == GameState.STATE_WAITING_PLAYERS || this.state_ == GameState.STATE_STOPPED) return;
+		if (this.playerInfo_.length == 0) this.setState(GameState.STOPPED);
+		if (this.state_ == GameState.WAITING_PLAYERS || this.state_ == GameState.STOPPED) return;
 		if (this.currentPlayer_ >= 0) {
 			this.currentPlayer().endTurn();
 			if (this.checkWin()) this.currentPlayer().activateTurn(TurnType.TURN_FINISHED);
@@ -187,20 +188,20 @@ export class Game {
 		if (this.currentPlayer_ == this.playerInfo_.length) {
 			// all players took their turn for this round
 			this.currentPlayer_ = 0;
-			if (this.state_ == GameState.STATE_START_SELECTION) {
-				this.setState(GameState.STATE_PLAYING);
+			if (this.state_ == GameState.START_SELECTION) {
+				this.setState(GameState.PLAYING);
 			} else {
 				while (this.currentPlayer_ < this.playerInfo_.length && this.currentPlayer().isFinished())
 					this.currentPlayer_++;
 				if (this.currentPlayer_ == this.playerInfo_.length) {
 					// all players finished the game
-					this.setState(GameState.STATE_STOPPED);
+					this.setState(GameState.STOPPED);
 					return;
 				}
 			}
 		}
 		this.currentPlayer().activateTurn(
-			this.state_ == GameState.STATE_START_SELECTION ? TurnType.TURN_SELECT_START : TurnType.TURN_MOVE,
+			this.state_ == GameState.START_SELECTION ? TurnType.TURN_SELECT_START : TurnType.TURN_MOVE,
 		);
 		this.currentPlayer().setAllowedVectors(this.getPlayerVectors());
 		this.onTurnAdvance.trigger();
@@ -238,7 +239,7 @@ export class Game {
 		}
 		// push the next point
 		switch (this.state_) {
-			case GameState.STATE_START_SELECTION:
+			case GameState.START_SELECTION:
 				for (let i = 0; i < this.track_.getStartPositions().length; i++) {
 					const arrowTip = new GridPoint(
 						this.track_.getStartPositions()[i].position.x + this.track_.getStartPositions()[i].direction.x,
@@ -260,7 +261,7 @@ export class Game {
 				// if we got here, player's selection was none of the valid ones, kick him out
 				this.currentPlayer().activateTurn(TurnType.TURN_FINISHED);
 				break;
-			case GameState.STATE_PLAYING: {
+			case GameState.PLAYING: {
 				const a = new Arrow(this.currentPlayerInfo().arrows.slice(-1)[0].to, nextPoint);
 				this.currentPlayerInfo().arrows.push(a);
 				this.currentPlayer().lastArrow = a;
@@ -306,7 +307,7 @@ export class Game {
 
 	private getPlayerVectors(): Arrow[] {
 		const ret: Arrow[] = [];
-		if (this.state_ == GameState.STATE_START_SELECTION) {
+		if (this.state_ == GameState.START_SELECTION) {
 			for (let i = 0; i < this.track_.getStartPositions().length; i++)
 				if (!this.startPosTaken_[i])
 					ret.push(
@@ -316,7 +317,7 @@ export class Game {
 							this.track_.getStartPositions()[i].direction.y,
 						),
 					);
-		} else if (this.state_ == GameState.STATE_PLAYING) {
+		} else if (this.state_ == GameState.PLAYING) {
 			const lastDir: Vector = this.currentPlayerInfo().arrows.slice(-1)[0].direction();
 			const lastP: GridPoint = this.currentPlayerInfo().arrows.slice(-1)[0].to;
 			const center: Arrow = Arrow.fromPointAndDir(lastP, lastDir.x, lastDir.y);

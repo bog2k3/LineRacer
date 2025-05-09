@@ -1,11 +1,11 @@
 import * as $ from "jquery";
-import { Event } from "../src/utils/event";
-import { randi } from "../src/utils/random";
+import { Event } from "./utils/event";
+import { randi } from "./utils/random";
 
 export namespace GUI {
 	export enum Views {
 		PlayerNameDialog,
-		TerrainConfig,
+		TrackDesign,
 		Loading,
 		InGameMenu,
 	}
@@ -69,13 +69,13 @@ export namespace GUI {
 		}
 	}
 
-	export function updateMapParameters(cfg: TerrainConfig): void {
-		$("#seed").val(cfg.seed);
-		$("#min-elevation").val(cfg.minElevation);
-		$("#max-elevation").val(cfg.maxElevation);
-		$("#variation").val(cfg.variation);
-		$("#roughness").val(cfg.roughness);
-	}
+	// export function updateMapParameters(cfg: TerrainConfig): void {
+	// 	$("#seed").val(cfg.seed);
+	// 	$("#min-elevation").val(cfg.minElevation);
+	// 	$("#max-elevation").val(cfg.maxElevation);
+	// 	$("#variation").val(cfg.variation);
+	// 	$("#roughness").val(cfg.roughness);
+	// }
 
 	export function setSpectateMode(mode: { spectate: boolean }): void {
 		if (mode.spectate) {
@@ -91,7 +91,7 @@ export namespace GUI {
 
 	function setupViews(): void {
 		viewHandles[Views.PlayerNameDialog] = $("#dialog-player-name");
-		viewHandles[Views.TerrainConfig] = $("#terrain-config-panel");
+		viewHandles[Views.TrackDesign] = $("#track-design-panel");
 		viewHandles[Views.Loading] = $("#dialog-loading");
 		viewHandles[Views.InGameMenu] = $("#ingame-menu");
 		$("#btn-confirm-name").on("click", handlePlayerName);

@@ -17,9 +17,6 @@ body {
 	right: 0;
 	bottom: 0;
 }
-#canvas2d {
-	z-index: 1;
-}
 #gui-container > div {
 	display: none;
 }
@@ -80,7 +77,7 @@ body {
 	margin: 0;
 	font-size: 1.3em;
 }
-#terrain-config-panel.show {
+#track-design-panel.show {
 	display: block !important;
 	width: 500px;
 	margin-left: auto;
@@ -89,25 +86,6 @@ body {
 	padding-top: 2em !important;
 	padding-left: 2em !important;
 	text-align: left;
-}
-input[type="range"] {
-	width: 200px;
-}
-datalist {
-	display: flex;
-	flex-direction: row;
-	justify-content: space-between;
-	width: 200px;
-	font-size: 0.5em;
-}
-.value-display {
-	position: relative;
-	top: -0.5em;
-	margin-left: 1em;
-	width: 3em;
-	padding: 0.2em;
-	text-align: center;
-	background: #eee;
 }
 #master-label h3 {
 	color: blue;

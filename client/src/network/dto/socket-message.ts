@@ -20,5 +20,4 @@ export enum SocketMessage {
 	S_PLAYER_LIST = "s-player-list", // SPlayerInfo[]
 	S_PLAYER_CONNECTED = "s-player-connected", // {name: string}
 	S_PLAYER_DISCONNECTED = "s-player-disconnected", // {name: string}
-	S_NETWORK_ID_RESOLVED = "s-network-id-resolved", // SNetworkIdResolvedDTO
 }

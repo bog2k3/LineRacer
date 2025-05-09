@@ -88,7 +88,7 @@ export class HumanController {
 		// compute player's possible moves:
 		const validMoves: Arrow[] = this.game_.activePlayer().validMoves();
 		this.possibleMoves_.splice(0, this.possibleMoves_.length); // clear the list
-		if (this.game_.state() == GameState.STATE_START_SELECTION) {
+		if (this.game_.state() == GameState.START_SELECTION) {
 			for (const a of validMoves) this.possibleMoves_.push({ p: a.to, isValid: true, isWithinTrack: true });
 			return;
 		}
@@ -139,7 +139,7 @@ export class HumanController {
 				// Shape2D.get().drawLine({to.x - POINT_RADIUS, to.y + POINT_RADIUS}, {to.x + POINT_RADIUS, to.y - POINT_RADIUS}, 0, *color);
 			}
 		}
-		if (this.game_.state() == GameState.STATE_PLAYING) {
+		if (this.game_.state() == GameState.PLAYING) {
 			// if no point selected yet, draw the previous vector, else draw the new vector to the selected point
 			const lastArrow = this.game_.activePlayer().lastArrow;
 			const from: ScreenPoint = this.grid_.gridToScreen(lastArrow.to);

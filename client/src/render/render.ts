@@ -1,20 +1,23 @@
 import { GlobalState } from "../global-state";
 
-export let context2d: CanvasRenderingContext2D;
+export let renderContext: CanvasRenderingContext2D;
 let nextTextY = 15;
 
-export type Render2dConfig = {
+export type RenderConfig = {
 	drawDebugKeys: boolean;
 	drawDebugPlayerList: boolean;
 	drawSpectateText: boolean;
 };
 
-export function setContext2d(context: CanvasRenderingContext2D): void {
-	context2d = context;
+export function setRenderContext(context: CanvasRenderingContext2D): void {
+	renderContext = context;
 }
 
-export function render2D(config: Render2dConfig): void {
-	context2d.clearRect(0, 0, context2d.canvas.width, context2d.canvas.height);
+export function render(config: RenderConfig): void {
+	renderContext.clearRect(0, 0, renderContext.canvas.width, renderContext.canvas.height);
+
+	GlobalState.grid.draw();
+
 	nextTextY = 15; // reset
 	if (config.drawDebugKeys) {
 		drawDebugKeys();
@@ -28,9 +31,9 @@ export function render2D(config: Render2dConfig): void {
 }
 
 function drawDebugKeys(): void {
-	context2d.font = "14px sans-serif";
-	context2d.fillStyle = "#fff";
-	context2d.textAlign = "left";
+	renderContext.font = "14px sans-serif";
+	renderContext.fillStyle = "#fff";
+	renderContext.textAlign = "left";
 	printText("Click on canvas to capture input");
 	printText("TAB toggles between free-camera and player camera");
 	printText("W,A,S,D to move around");
@@ -42,30 +45,30 @@ function drawDebugKeys(): void {
 }
 
 function drawDebugPlayerList(): void {
-	context2d.font = "15px sans-serif";
-	context2d.fillStyle = "#fff";
-	context2d.textAlign = "left";
+	renderContext.font = "15px sans-serif";
+	renderContext.fillStyle = "#fff";
+	renderContext.textAlign = "left";
 	for (let player of GlobalState.playerList.getPlayers()) {
 		printText(`${player.name} (${player.state})`);
 	}
 }
 
 function printText(text: string): void {
-	context2d.fillText(text, 10, nextTextY);
+	renderContext.fillText(text, 10, nextTextY);
 	nextTextY += 15;
 }
 
 function drawTextShadow(text: string, x: number, y: number, color = "#fff", shadowColor = "#000"): void {
-	const oldFill = context2d.fillStyle;
-	context2d.fillStyle = shadowColor;
-	context2d.fillText(text, x + 1, y + 1);
-	context2d.fillStyle = color;
-	context2d.fillText(text, x, y);
-	context2d.fillStyle = oldFill;
+	const oldFill = renderContext.fillStyle;
+	renderContext.fillStyle = shadowColor;
+	renderContext.fillText(text, x + 1, y + 1);
+	renderContext.fillStyle = color;
+	renderContext.fillText(text, x, y);
+	renderContext.fillStyle = oldFill;
 }
 
 function drawSpectateText(): void {
-	context2d.font = "32px sans-serif";
-	context2d.textAlign = "center";
-	drawTextShadow("Ești spectator, apasă SPACE ca să intri in joc", context2d.canvas.width * 0.5, 100);
+	renderContext.font = "32px sans-serif";
+	renderContext.textAlign = "center";
+	drawTextShadow("Ești spectator, apasă SPACE ca să intri in joc", renderContext.canvas.width * 0.5, 100);
 }

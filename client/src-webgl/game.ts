@@ -1,6 +1,6 @@
 import { PlayerController } from "./entities/player.controller";
-import { GlobalState } from "./global-state";
-import { logprefix } from "./joglfw/log";
+import { GlobalState } from "../src/global-state";
+import { logprefix } from "../src/utils/log";
 import { Vector } from "../src/math/vector";
 import { Event } from "../src/utils/event";
 import { Entity } from "./joglfw/world/entity";
@@ -25,9 +25,7 @@ export class Game {
 
 	onStateChanged = new Event<(state: GameState, prevState: GameState) => void>();
 
-	constructor() {
-		this.setupNetworkManagerFactories();
-	}
+	constructor() {}
 
 	async initialize(): Promise<void> {
 		console.log("Initializing");

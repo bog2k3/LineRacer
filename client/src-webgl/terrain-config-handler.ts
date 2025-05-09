@@ -1,6 +1,6 @@
 import { TerrainConfig } from "./entities/terrain/config";
 import { GameState } from "./game";
-import { GlobalState } from "./global-state";
+import { GlobalState } from "../src/global-state";
 import { GUI } from "./gui";
 import { rand, randi } from "../src/utils/random";
 import { WebSock } from "./network/websock";
